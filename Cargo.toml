@@ -1,0 +1,21 @@
+[package]
+name = "zork-crt-gui"
+version = "0.1.0"
+edition = "2021"
+description = "Portable CRT GUI for Z-machine games (Zork I and others) — SDL2 + phosphor CRT shader"
+license = "MIT"
+repository = "https://github.com/akayukov/zork-crt-gui"
+keywords = ["zork", "z-machine", "crt", "sdl2", "retro"]
+readme = "README.md"
+
+[dependencies]
+sdl2 = { version = "0.38", features = ["ttf"] }
+rfd = "0.15"
+
+# Optional pure-Rust Z-machine interpreter (future). Subprocess dfrotz is the v1 backend.
+# If you want zero external deps, you could integrate `zmachine` crate here instead of spawning dfrotz.
+
+[profile.release]
+lto = true
+opt-level = 3
+strip = true

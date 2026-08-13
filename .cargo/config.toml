@@ -1,0 +1,12 @@
+[build]
+# Homebrew on Apple Silicon is /opt/homebrew, Intel is /usr/local; include both.
+# The extra -L is harmless if the dir doesn't exist.
+rustflags = [
+  "-L", "/opt/homebrew/lib",
+  "-L", "/opt/homebrew/opt/sdl2_ttf/lib",
+  "-L", "/usr/local/lib",
+  "-L", "/usr/local/opt/sdl2_ttf/lib",
+]
+
+[env]
+PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/sdl2_ttf/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/opt/sdl2_ttf/lib/pkgconfig"
