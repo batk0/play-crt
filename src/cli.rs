@@ -5,12 +5,39 @@ pub struct Cli {
     pub story_arg: Option<String>,
     pub show_help: bool,
     pub show_version: bool,
+    pub curvature: Option<(f32, f32)>,
+}
+
+#[allow(clippy::many_single_char_names)]
+fn parse_curvature(s: &str) -> Result<(f32, f32), String> {
+    // Accepts "0.20" (uniform) or "0.15,0.20" or "0.15x0.20"
+    let cleaned = s.replace('x', ",");
+    let parts: Vec<&str> = cleaned.split(',').map(str::trim).filter(|p| !p.is_empty()).collect();
+    match parts.as_slice() {
+        [single] => {
+            let val: f32 = single.parse().map_err(|_| format!("invalid --curvature value: {s} (expected float or \"X,Y\")"))?;
+            if !(0.0..=1.0).contains(&val) {
+                return Err(format!("--curvature {val} out of range 0.0..1.0"));
+            }
+            Ok((val, val))
+        }
+        [ax, by] => {
+            let cur_x: f32 = ax.parse().map_err(|_| format!("invalid --curvature X: {ax}"))?;
+            let cur_y: f32 = by.parse().map_err(|_| format!("invalid --curvature Y: {by}"))?;
+            if !(0.0..=1.0).contains(&cur_x) || !(0.0..=1.0).contains(&cur_y) {
+                return Err(format!("--curvature {cur_x},{cur_y} out of range 0.0..1.0"));
+            }
+            Ok((cur_x, cur_y))
+        }
+        _ => Err(format!("invalid --curvature value: {s} (use 0.20 or 0.15,0.20)")),
+    }
 }
 
 pub fn parse_args() -> Result<Cli, String> {
     let mut story_arg: Option<String> = None;
     let mut show_help = false;
     let mut show_version = false;
+    let mut curvature: Option<(f32, f32)> = None;
     let mut args = env::args().skip(1).peekable();
     while let Some(a) = args.next() {
         match a.as_str() {
@@ -26,6 +53,17 @@ pub fn parse_args() -> Result<Cli, String> {
             s if s.starts_with("--story=") => {
                 story_arg = Some(s["--story=".len()..].to_string());
             }
+            "--curvature" => {
+                if let Some(v) = args.next() {
+                    curvature = Some(parse_curvature(&v)?);
+                } else {
+                    return Err("--curvature requires a value (e.g. --curvature 0.20 or --curvature 0.15,0.20)".into());
+                }
+            }
+            s if s.starts_with("--curvature=") => {
+                let v = &s["--curvature=".len()..];
+                curvature = Some(parse_curvature(v)?);
+            }
             s if s.starts_with('-') => {
                 return Err(format!("unknown flag: {s}"));
             }
@@ -40,6 +78,7 @@ pub fn parse_args() -> Result<Cli, String> {
         story_arg,
         show_help,
         show_version,
+        curvature,
     })
 }
 
@@ -55,6 +94,9 @@ USAGE:
 
 OPTIONS:
     --story <PATH>   Path to .z3/.z5/.z8/.zip story file (also accepts positional arg)
+    --curvature <F[,F]>  Barrel curvature X,Y (0.0..1.0). Single value sets both axes.
+                        Default 0.20,0.20 (visible bulge). Try 0.15,0.20 or 0.10 to disable.
+                        Examples: --curvature 0.20  --curvature 0.15,0.20  --curvature=0
     --help, -h       Show this help
     --version        Show version
 

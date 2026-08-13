@@ -84,6 +84,7 @@ pub fn alpha_f32_to_u8(v: f32) -> u8 {
 }
 
 /// Convert `i32` small value (0..255) to `u8` without `as` at call site.
+#[allow(dead_code)]
 pub fn i32_to_u8(v: i32) -> u8 {
     u8::try_from(v).expect("value fits in u8")
 }
@@ -112,6 +113,7 @@ pub fn i32_to_f32(v: i32) -> f32 {
 
 /// Convert `f32` to `i32` via rounding with clamped range.
 /// Isolated here because float->int is unavoidable for CRT flicker math.
+#[allow(dead_code)]
 pub fn f32_to_i32_round(v: f32) -> i32 {
     // SAFETY: used for small screen flicker alpha (~32..44) so range is tiny.
     #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]

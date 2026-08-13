@@ -11,6 +11,7 @@ readme = "README.md"
 [dependencies]
 sdl2 = { version = "0.38", features = ["ttf"] }
 rfd = "0.15"
+glow = "0.16"
 
 # Optional pure-Rust Z-machine interpreter (future). Subprocess dfrotz is the v1 backend.
 # If you want zero external deps, you could integrate `zmachine` crate here instead of spawning dfrotz.

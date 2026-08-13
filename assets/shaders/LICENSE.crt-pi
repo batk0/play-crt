@@ -1,0 +1,26 @@
+crt-pi shader — original source and license
+==========================================
+
+Original shader: crt-pi.glsl from libretro/glsl-shaders
+Repository: https://github.com/libretro/glsl-shaders
+Path: crt/shaders/crt-pi.glsl
+Author: Copyright (C) 2015-2016 davej
+License: GNU General Public License v2 (or later) — see header in crt-pi.glsl
+
+This copy is retained verbatim (with added uniform-parameter docs) under
+its original GPL-2.0+ license.
+
+Project note (zork-crt-gui):
+  The user request described crt-pi as "MIT, Raspberry Pi CRT shader".
+  The upstream file is actually GPL-2.0+. This repository keeps the
+  original GPL-2.0+ header intact in assets/shaders/crt-pi.glsl and
+  lists the shader under GPL-2.0+ in README.md. The Rust port in
+  src/crt_pi.rs implements the same algorithm and is covered by the
+  project's MIT license (algorithm itself is not copyrightable; the GLSL
+  text remains GPL-2.0+).
+
+  If you redistribute the .glsl verbatim, you must comply with GPL-2.0+.
+  If you only use the Rust port (CPU fallback / glow path loads the GLSL
+  at runtime), note the runtime dependency on the GPL-2.0+ shader text.
+
+See also: https://github.com/libretro/glsl-shaders/blob/master/crt/shaders/crt-pi.glsl

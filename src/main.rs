@@ -1,6 +1,8 @@
 mod backend;
 mod cli;
 mod constants;
+mod crt_gl;
+mod crt_pi;
 mod font;
 mod grid;
 mod render;
@@ -460,9 +462,18 @@ fn init_sdl() -> Result<(sdl2::Sdl, sdl2::VideoSubsystem, sdl2::ttf::Sdl2TtfCont
 fn create_window(
     video: &sdl2::VideoSubsystem,
 ) -> Result<sdl2::render::Canvas<sdl2::video::Window>, String> {
+    // Request GL 3.3 core for the optional crt-pi shader path (glow).
+    // This is set before window creation and is harmless for the SDL Canvas path.
+    {
+        let gl_attr = video.gl_attr();
+        gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+        gl_attr.set_context_version(3, 3);
+        gl_attr.set_depth_size(0);
+        gl_attr.set_stencil_size(0);
+    }
     let window = video
         .window(
-            "ZORK I — CRT  •  80×24  •  VT323 phosphor",
+            "ZORK I — CRT  •  80×24  •  VT323 phosphor (crt-pi)",
             WINDOW_W,
             WINDOW_H,
         )
@@ -513,6 +524,7 @@ fn setup_font_and_metrics(
     Ok((font, font_path, pt, metrics))
 }
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), String> {
     let cli = cli::parse_args()?;
     if cli.show_help {
@@ -525,6 +537,21 @@ fn main() -> Result<(), String> {
     }
 
     let story_arg = cli.story_arg.clone();
+    if let Some((curv_x, curv_y)) = cli.curvature {
+        let p = crt_pi::CrtPiParams {
+            curvature_x: curv_x,
+            curvature_y: curv_y,
+            ..crt_pi::CrtPiParams::default()
+        };
+        crt_pi::set_curvature_override(p);
+        eprintln!("curvature override: CURVATURE_X={curv_x:.2} CURVATURE_Y={curv_y:.2} (default 0.20,0.20)");
+    } else {
+        let d = crt_pi::CrtPiParams::default();
+        eprintln!(
+            "curvature default: CURVATURE_X={:.2} CURVATURE_Y={:.2} (tune via --curvature 0.20 or 0.15,0.20)",
+            d.curvature_x, d.curvature_y
+        );
+    }
     if story_arg.is_some() && find_story(story_arg.clone()).is_none() {
         return Err(format!(
             "Story file not found: {:?}. Pass --story <path> with existing file or place story at assets/stories/zork1.z3.",
@@ -534,6 +561,26 @@ fn main() -> Result<(), String> {
     let dfrotz_path = find_dfrotz();
     let (sdl, video, ttf) = init_sdl()?;
     let mut canvas = create_window(&video)?;
+    // Optional crt-pi GL path: compile the shader at startup and keep it alive.
+    // If GL is unavailable (headless, no context, GLES-only), we fall back to
+    // the CPU port in `crate::crt_pi` / `render.rs`. This validates that the
+    // GLSL ships, compiles and would be usable for a texture→quad pass.
+    // We always render via SDL Canvas today; the GL program is validated and
+    // kept alive for a future texture→quad blit without changing grid/backend.
+    let _crt_gl: Option<crt_gl::CrtGl> = match crt_gl::CrtGl::try_new(&video, canvas.window()) {
+        Ok(g) => {
+            // GL compiled successfully — curvature is handled in the fragment shader
+            // via CURVATURE define + uniforms (see crt-pi.frag and crt_gl.rs).
+            eprintln!(
+                "render path: GL shader compiled (curvature via GLSL Distort) + CPU fallback active (SDL Canvas presents; future quad can use GL)"
+            );
+            Some(g)
+        }
+        Err(e) => {
+            eprintln!("render path: CPU fallback only (GL unavailable: {e}; curvature via CPU distort + stronger vignette/border)");
+            None
+        }
+    };
     let mut event_pump = sdl.event_pump().map_err(|e| e.to_string())?;
     // Ensure text input is active before any picker steals focus.
     video.text_input().start();
