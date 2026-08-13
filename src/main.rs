@@ -1,6 +1,7 @@
 mod backend;
 mod cli;
 mod constants;
+mod controls;
 mod crt_gl;
 mod crt_pi;
 mod font;
@@ -22,10 +23,12 @@ use backend::{find_dfrotz, find_story, spawn_dfrotz, DfrotzSession};
 use constants::{
     f32_to_u8_clamped, u32_to_i32, usize_to_i32, BEZEL, INNER_PAD, WINDOW_H, WINDOW_W,
 };
+use controls::ControlState;
 use grid::Grid;
 use render::{
-    compute_grid_metrics, draw_bezel, draw_glass, draw_grid_text, draw_power_led,
-    draw_scanlines_and_vignette, GridMetrics,
+    compute_grid_metrics, draw_bezel, draw_bottom_control_labels, draw_bottom_controls,
+    draw_glass, draw_grid_text_with_controls, draw_power_led,
+    draw_scanlines_and_vignette_with_state, GridMetrics,
 };
 
 #[allow(dead_code)]
@@ -71,6 +74,8 @@ struct AppState {
     blink_on: bool,
     last_blink: Instant,
     start_time: Instant,
+    control_state: ControlState,
+    mouse_pos: Option<(i32, i32)>,
 }
 
 impl AppState {
@@ -90,6 +95,8 @@ impl AppState {
             blink_on: true,
             last_blink: Instant::now(),
             start_time: Instant::now(),
+            control_state: ControlState::default(),
+            mouse_pos: None,
         }
     }
 
@@ -723,6 +730,14 @@ fn pump_events(
                 ..
             } => state.history_next(),
             Event::TextInput { text, .. } => state.handle_text_input(&text),
+            Event::MouseButtonDown { x, y, mouse_btn: sdl2::mouse::MouseButton::Left, .. } => {
+                if controls::handle_click(&mut state.control_state, x, y) {
+                    // handled — no further action
+                }
+            }
+            Event::MouseMotion { x, y, .. } => {
+                state.mouse_pos = Some((x, y));
+            }
             _ => {}
         }
     }
@@ -756,37 +771,41 @@ fn render_frame(
     state: &AppState,
 ) -> Result<(), String> {
     let t = state.start_time.elapsed().as_secs_f32();
-    let flicker = (t * 7.3).sin() * 0.5_f32 + 0.5_f32;
-    let flicker = flicker * 0.04_f32;
+    let raw_flicker = (t * 7.3).sin() * 0.5_f32 + 0.5_f32;
+    let raw_flicker = raw_flicker * 0.04_f32;
     let hum = (t * 60.0).sin() * 0.02_f32;
     let hum = hum.abs();
 
     draw_bezel(canvas);
+    draw_bottom_controls(canvas, &state.control_state, state.mouse_pos);
+    draw_bottom_control_labels(canvas, font, &state.control_state);
     draw_power_led(canvas, state.session.is_some());
     let (glass_x, glass_y, glass_w, glass_h) = draw_glass(canvas, metrics);
 
-    draw_grid_text(
+    draw_grid_text_with_controls(
         canvas,
         &state.grid,
         font,
         metrics,
-        flicker,
+        raw_flicker,
         hum,
         state.blink_on,
         state.session.is_some(),
+        &state.control_state,
     )?;
 
     let has_error = state.dfrotz_error.is_some();
-    draw_scanlines_and_vignette(
+    draw_scanlines_and_vignette_with_state(
         canvas,
         glass_x,
         glass_y,
         glass_w,
         glass_h,
         t,
-        flicker,
+        raw_flicker,
         state.session.is_some(),
         has_error,
+        &state.control_state,
     );
 
     let _ = f32_to_u8_clamped;

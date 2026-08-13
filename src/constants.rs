@@ -8,12 +8,22 @@ pub const WINDOW_H: u32 = 860;
 pub const BEZEL: i32 = 48;
 pub const INNER_PAD: i32 = 14;
 
+// Curvy CRT geometry — rounded tube radii (px). Chosen to match 80s monitors
+// like DEC VT100/IBM 5151: thick outer plastic, softer glass.
+pub const BEZEL_OUTER_RADIUS: i32 = 28;
+pub const BEZEL_INNER_RADIUS: i32 = 22;
+pub const GLASS_RADIUS: i32 = 18;
+pub const GLASS_INNER_BEVEL: i32 = 4;
+
 pub const BEZEL_COLOR: Color = Color::RGB(0x2e, 0x2e, 0x2a);
 pub const BEZEL_HILITE: Color = Color::RGB(0x4a, 0x4a, 0x44);
 pub const BEZEL_SHADOW: Color = Color::RGB(0x1a, 0x1a, 0x18);
 pub const GLASS_BG: Color = Color::RGB(0x0a, 0x14, 0x0e);
+#[allow(dead_code)]
 pub const PHOSPHOR: Color = Color::RGB(0x33, 0xff, 0x66);
+#[allow(dead_code)]
 pub const PHOSPHOR_DIM: Color = Color::RGB(0x1a, 0xcc, 0x44);
+#[allow(dead_code)]
 pub const PHOSPHOR_BLOOM: Color = Color::RGB(0x66, 0xff, 0x99);
 #[allow(dead_code)]
 pub const AMBER: Color = Color::RGB(0xff, 0xcc, 0x33);

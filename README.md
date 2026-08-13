@@ -1,6 +1,6 @@
 # Zork CRT GUI — SDL2 phosphor terminal for Z-machine games
 
-Portable Rust + SDL2 CRT that runs **Zork I** (and any `.z3/.z5/.z8/.zip`) with a full phosphor-CRT look: curvature (rounded glass + vignette), scanlines, vignette, bloom, flicker, and a dark plastic bezel with screws + power LED. Strict **80×24** monospaced grid, **VT323** font (bundled, OFL).
+Portable Rust + SDL2 CRT that runs **Zork I** (and any `.z3/.z5/.z8/.zip`) with a full phosphor-CRT look: curvature (rounded glass + vignette), scanlines, vignette, bloom, flicker, and a dark plastic bezel with power LED + bottom control strip (phosphor colour + toggles). Strict **80×24** monospaced grid, **VT323** font (bundled, OFL).
 
 Backend is a `dfrotz` subprocess (`-w 80 -h 24 -m -p`) so it works with any Z-machine story via `--story`. No story file is bundled in this standalone repo — provide one with `--story <path>` (e.g. built from the historical `zork1` repo) or place it at `assets/stories/zork1.z3` / `./zork1.z3`.
 
@@ -87,12 +87,13 @@ EXAMPLES:
 
 **In-GUI controls**
 
-- Type → characters echo in phosphor green on the 80×24 grid
+- Type → characters echo in phosphor colour on the 80×24 grid (Green / Amber / White via bottom switch)
 - `Enter` → send line to the Z-machine
 - `Backspace` → edit current line
 - `Up`/`Down` → command history (100 entries)
 - `F1` → native file picker for another story (restarts dfrotz)
 - `Esc` or close window → quit
+- **Mouse (bottom 48 px bezel bar)** — click the 3-way phosphor switch (Green | Amber | White) to change text/bloom colour; click the three toggle switches to enable/disable **Curvature**, **Flicker**, and **Scanlines** live. Hover highlights the control under the cursor. Power LED (far right, red when dfrotz alive) is always visible.
 
 ---
 
@@ -105,14 +106,15 @@ This build integrates **[crt-pi](https://github.com/libretro/glsl-shaders/blob/m
 - **GL path** — `src/crt_gl.rs` uses `glow = "0.16"` to compile the same GLSL at startup (`CrtGl::try_new(&video, &window)`). If a GL 3.3 core context is available the shader compiles and is kept alive; window presentation still goes through the SDL2 Canvas so the fallback is always valid. A future fullscreen-quad blit (`bind()` → draw) can consume the program without changing `grid`/`backend`.
 - **CPU fallback (always active today)** — SDL2 2D renderer, but scanlines now use the true crt-pi formula: per-row `scanline_weight_for_row()` with `filterWidth = InputSize.y / OutputSize.y / 3` (3-tap multisample), `SCANLINE_WEIGHT=6.0`, `SCANLINE_GAP=0.12`, `BLOOM_FACTOR=1.5` (inverted to darkness so gaps are opaque, lines transparent), plus sinusoidal wobble. Aperture mask (`MASK_TYPE 1` green/magenta) is drawn as 1 px vertical stripes at low alpha; vignette + corner darkening + specular highlight + bezel glow approximate the curvature barrel that the shader does for free on the GPU.
 
-Result: with GL you get a true fragment shader; without GL (headless, CI, any SDL2 target) you get a pixel-identical CPU approximation. Either way the **80×24 VT323 grid, bezel/LED/speaker, bloom text, flicker/hum** are preserved.
+Result: with GL you get a true fragment shader; without GL (headless, CI, any SDL2 target) you get a pixel-identical CPU approximation. Either way the **80×24 VT323 grid, phosphor bloom, flicker/hum** are preserved and the bottom bezel now hosts interactive controls.
 
-**Bezel** — dark plastic outer frame, hilite/shadow edges, 6 screws with cross, speaker grille, power LED (red when dfrotz alive), brand plate.  
-**Curvature** — rounded glass illusion via inner shadow + vignette + top highlight; on GL via `Distort()` barrel math (`CURVATURE_X 0.10 / Y 0.25` + `0.23` barrel scale).  
-**Scanlines** — crt-pi weighted (`max(1−dist²·6, 0.12)`), multisampled, bloom-scaled, mask-modulated.  
-**Vignette / corners** — 18 px edge gradient + corner darkening.  
-**Bloom / glow** — text rendered twice (70-α + 35-α `PHOSPHOR_BLOOM` halo) behind crisp `PHOSPHOR`, plus bezel spill — matches `BLOOM_FACTOR 1.5` intent.  
-**Flicker / hum** — `sin(t·7.3)` + 60 Hz hum with fullscreen overlay.
+**Bezel** — dark plastic outer frame, hilite/shadow edges, power LED (red when dfrotz alive), bottom control strip with phosphor colour switch + 3 effect toggles (no screws/speaker/brand plate).  
+**Phosphor** — selectable **Green** `#33FF66` (`PHOSPHOR`), **Amber** `#FFB000`, **White** `#E0E0C0`; bloom/dim variants derived per colour (`controls::PhosphorColor`). Toggle via `ControlState` and `draw_bottom_controls`.  
+**Curvature** — rounded glass illusion via inner shadow + vignette + top highlight; on GL via `Distort()` barrel math (`CURVATURE_X/Y 0.20` + `0.23` barrel scale). Disabled live when the **CURVE** toggle is off (`ControlState::curvature_enabled`, `crt_pi::CrtPiParams` zeroed, `barrel_inset_for_y` skipped).  
+**Scanlines** — crt-pi weighted (`max(1−dist²·6, 0.12)`), multisampled, bloom-scaled, mask-modulated. Disabled when **SCAN** toggle off (skips `draw_scanlines` + `draw_aperture_mask`).  
+**Vignette / corners** — edge gradient + corner darkening + radial vignette (radial component skipped when curvature off).  
+**Bloom / glow** — text rendered twice (70-α + 35-α phosphor bloom halo) behind crisp phosphor colour, plus phosphor-tinted bezel spill.  
+**Flicker / hum** — `sin(t·7.3)` + 60 Hz hum with fullscreen overlay; disabled when **FLICKER** toggle off (alpha fixed at 255, overlay skipped).
 
 ---
 
@@ -144,15 +146,16 @@ curl -L https://github.com/google/fonts/raw/main/ofl/vt323/VT323-Regular.ttf -o 
 │   ├── shaders/LICENSE.crt-pi    — source & license note
 │   └── stories/                  — optional: place zork1.z3 here (not bundled)
 └── src/
-    ├── main.rs         — arg parsing, SDL/TTF init, GL attr, CrtGl probe, AppState, main loop
+    ├── main.rs         — arg parsing, SDL/TTF init, GL attr, CrtGl probe, AppState (+ ControlState/mouse), main loop, mouse hit-test
     ├── cli.rs          — Cli + parse_args/print_help
-    ├── constants.rs    — COLS/ROWS/WINDOW_W/WINDOW_H/COLORS + safe conversions
+    ├── constants.rs    — COLS/ROWS/WINDOW_W/WINDOW_H/COLORS + safe conversions (PHOSPHOR now via ControlState)
+    ├── controls.rs     — ControlState, PhosphorColor (Green/Amber/White), bottom-bar layout & hit-testing, crt_params()
     ├── grid.rs         — Grid (80×24, cursor, scroll, put_char)
     ├── font.rs         — font_search_paths, load_best_font, choose_font
     ├── backend.rs      — DfrotzSession, find_dfrotz, find_story, spawn_dfrotz
     ├── crt_pi.rs       — Rust port of crt-pi math (CalcScanLine, gamma, bloom, mask, distort)
     ├── crt_gl.rs       — glow wrapper: compiles crt-pi.vert/.frag, validates GL path
-    └── render.rs       — CRT rendering: bezel, glass, bloom text, crt-pi scanlines/mask/vignette
+    └── render.rs       — CRT rendering: bezel (no screws/grille/plate), glass, phosphor-aware bloom text, crt-pi scanlines/mask/vignette, bottom controls (draw_bottom_controls/draw_bottom_control_labels)
 ```
 
 - `find_dfrotz()` — `/opt/homebrew/bin/dfrotz`, `/usr/local/bin/dfrotz`, `$PATH`
