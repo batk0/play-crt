@@ -1054,6 +1054,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
+name = "play-crt"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "glow",
+ "rand 0.4.6",
+ "rfd",
+ "sdl2",
+ "serde",
+ "serde_json",
+ "zip",
+]
+
+[[package]]
 name = "polling"
 version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2143,20 +2157,6 @@ dependencies = [
  "crc32fast",
  "log",
  "simd-adler32",
-]
-
-[[package]]
-name = "zork-crt-gui"
-version = "0.1.0"
-dependencies = [
- "base64",
- "glow",
- "rand 0.4.6",
- "rfd",
- "sdl2",
- "serde",
- "serde_json",
- "zip",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 #version 330 core
-// crt-pi.frag — fragment shader for zork-crt-gui OpenGL path
+// crt-pi.frag — fragment shader for play-crt OpenGL path
 // Derived from libretro/glsl-shaders crt/shaders/crt-pi.glsl (GPL-2.0+, (C) 2015-2016 davej)
 // Adapted from single-file #ifdef FRAGMENT variant to GL 3.3 core for glow.
 // Parameters mirror the original #pragma parameter defaults; uniforms can be
@@ -25,7 +25,7 @@ uniform float BLOOM_FACTOR = 1.5;
 uniform float INPUT_GAMMA = 2.4;
 uniform float OUTPUT_GAMMA = 2.2;
 
-// Feature toggles — mirror original #defines (enabled by default in zork-crt-gui)
+// Feature toggles — mirror original #defines (enabled by default in play-crt)
 #define SCANLINES
 #define MULTISAMPLE
 #define GAMMA

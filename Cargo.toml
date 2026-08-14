@@ -1,10 +1,10 @@
 [package]
-name = "zork-crt-gui"
+name = "play-crt"
 version = "0.1.0"
 edition = "2021"
-description = "Portable CRT GUI for Z-machine games (Zork I and others) — SDL2 + phosphor CRT shader"
+description = "CRT monitor frontend for Z-machine and text games — SDL2 + phosphor CRT shader"
 license = "MIT"
-repository = "https://github.com/akayukov/zork-crt-gui"
+repository = "https://github.com/akayukov/play-crt"
 keywords = ["zork", "z-machine", "crt", "sdl2", "retro"]
 readme = "README.md"
 

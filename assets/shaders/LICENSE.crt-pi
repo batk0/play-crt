@@ -10,7 +10,7 @@ License: GNU General Public License v2 (or later) — see header in crt-pi.glsl
 This copy is retained verbatim (with added uniform-parameter docs) under
 its original GPL-2.0+ license.
 
-Project note (zork-crt-gui):
+Project note (play-crt):
   The user request described crt-pi as "MIT, Raspberry Pi CRT shader".
   The upstream file is actually GPL-2.0+. This repository keeps the
   original GPL-2.0+ header intact in assets/shaders/crt-pi.glsl and

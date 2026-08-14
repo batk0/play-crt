@@ -1,5 +1,5 @@
 #version 330 core
-// crt-pi.vert — vertex shader for zork-crt-gui OpenGL path
+// crt-pi.vert — vertex shader for play-crt OpenGL path
 // Derived from libretro/glsl-shaders crt/shaders/crt-pi.glsl (GPL-2.0+, (C) 2015-2016 davej)
 // Split from the single-file #ifdef VERTEX variant for use with glow (GL 3.3 core).
 // Original uses MVPMatrix + TexCoord/VertexCoord; this version keeps that interface.

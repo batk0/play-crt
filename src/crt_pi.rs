@@ -4,7 +4,7 @@
 //! `libretro/glsl-shaders/crt/shaders/crt-pi.glsl`, GPL-2.0+, © 2015-2016 davej).
 //! This file re-implements the same math in pure Rust for the SDL2 CPU
 //! renderer path. The GLSL text remains GPL-2.0+; this Rust translation is
-//! MIT (same as the rest of `zork-crt-gui`) — algorithms are not copyrightable,
+//! MIT (same as the rest of `play-crt`) — algorithms are not copyrightable,
 //! but we credit the original and keep the GLSL verbatim under its license.
 //!
 //! Covered effects:

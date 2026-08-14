@@ -1,4 +1,4 @@
-# Zork CRT GUI — SDL2 phosphor terminal for Z-machine games
+# Play CRT — SDL2 phosphor terminal for Z-machine and text games
 
 Portable Rust + SDL2 CRT that runs **Zork I** (and any `.z3/.z5/.z8/.zip`) with a full phosphor-CRT look: curvature (rounded glass + vignette), scanlines, vignette, bloom, flicker, and a dark plastic bezel with power LED + bottom control strip (phosphor colour + toggles). Strict **80×24** monospaced grid, **VT323** font (bundled, OFL).
 
@@ -10,7 +10,15 @@ Backend is a **pure-Rust Z-machine** (vendored [encrusted](https://github.com/de
 
 ## Quick start
 
-### macOS (Homebrew, Apple Silicon / Intel)
+### Homebrew (tap)
+
+```bash
+brew install akayukov/tap/play-crt
+play-crt --story /path/to/game.z3
+play-crt --help
+```
+
+### macOS (Homebrew, Apple Silicon / Intel) — build from source
 
 ```bash
 # 1) toolchain + SDL2
@@ -28,12 +36,12 @@ cargo build
 cargo run -- --story /path/to/zork1.z3
 # or if you placed a story at assets/stories/zork1.z3 or ./zork1.z3:
 cargo run -- --story assets/stories/zork1.z3
-./target/debug/zork-crt-gui --story ./zork1.z3
+./target/debug/play-crt --story ./zork1.z3
 
 # alternative: positional arg or file picker (F1)
 cargo run -- zork1.zip
 cargo run --              # opens native file picker (F1) or shows help screen
-./target/debug/zork-crt-gui --story ~/games/enchanter.z5
+./target/debug/play-crt --story ~/games/enchanter.z5
 ```
 
 > **Where to get a story file?** Build `zork1.z3` from the historical `zork1` repo (`zil` → `COMPILED/zork1.z3`), or use any `.z3/.z5/.z8/.zip` you own. Copy it to this repo if you like:
@@ -49,7 +57,7 @@ cargo run --              # opens native file picker (F1) or shows help screen
 sudo apt update
 sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config build-essential
 cargo build
-./target/debug/zork-crt-gui --story /path/to/zork1.z3
+./target/debug/play-crt --story /path/to/zork1.z3
 ```
 
 **Windows (MSVC)**
@@ -63,7 +71,7 @@ cargo build
 ## Usage
 
 ```
-zork-crt-gui [OPTIONS] [STORY]
+play-crt [OPTIONS] [STORY]
 
 OPTIONS:
   --story <PATH>   Path to .z3/.z5/.z8/.zip (also positional)
@@ -82,7 +90,7 @@ EXAMPLES:
   cargo run -- --story assets/stories/zork1.z3
   cargo run -- --story /path/to/minizork.z3
   cargo run -- --story zork1.zip
-  ./target/debug/zork-crt-gui --story ~/games/enchanter.z5
+  ./target/debug/play-crt --story ~/games/enchanter.z5
 ```
 
 **In-GUI controls**
@@ -186,9 +194,9 @@ Previously the app spawned `dfrotz -w 80 -h 24 -m -p` (GPL) via `Popen` and thre
 ```bash
 cargo check
 cargo build
-./target/debug/zork-crt-gui --help
-./target/debug/zork-crt-gui --version
-./target/debug/zork-crt-gui --story /nonexistent  # exits 1 with helpful message, no picker hang in CI
+./target/debug/play-crt --help
+./target/debug/play-crt --version
+./target/debug/play-crt --story /nonexistent  # exits 1 with helpful message, no picker hang in CI
 cargo clippy -- -D clippy::pedantic
 cargo test
 ```

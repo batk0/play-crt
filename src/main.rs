@@ -547,7 +547,7 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
     if cli.show_version {
-        println!("zork-crt-gui 0.1.0 (SDL2 CRT, pure Rust Z-machine — encrusted/MIT)");
+        println!("play-crt 0.1.0 (SDL2 CRT, pure Rust Z-machine — encrusted/MIT)");
         return Ok(());
     }
 

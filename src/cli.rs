@@ -84,10 +84,10 @@ pub fn parse_args() -> Result<Cli, String> {
 
 pub fn print_help() {
     println!(
-        r"zork-crt-gui — CRT phosphor GUI for Z-machine games
+        r"play-crt — CRT phosphor GUI for Z-machine and text games
 
 USAGE:
-    zork-crt-gui [OPTIONS] [STORY]
+    play-crt [OPTIONS] [STORY]
     cargo run -- [OPTIONS] [STORY]
     cargo run -- --story ./zork1.z3
     cargo run -- --story assets/stories/zork1.z3
@@ -123,7 +123,7 @@ EXAMPLES:
     cargo run -- --story ./zork1.z3
     cargo run -- --story assets/stories/zork1.z3
     cargo run -- zork1.zip
-     ./target/debug/zork-crt-gui --story /path/to/game.z5
+    ./target/debug/play-crt --story /path/to/game.z5
 "
     );
 }
