@@ -141,7 +141,11 @@ fn main() -> Result<(), String> {
         }
         st
     };
-    if state.vm_error.is_some() && state.backend.is_none() && state.menu.is_none() {
+    if state.vm_error.is_some()
+        && state.backend.is_none()
+        && state.menu.is_none()
+        && story_path_init.is_none()
+    {
         if let Some(e) = state.vm_error.clone() {
             if !e.contains("not found") {
                 state.grid.put_str(&format!("\n !! {e}\n"));

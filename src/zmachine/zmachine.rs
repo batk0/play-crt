@@ -1425,7 +1425,7 @@ impl Zmachine {
             "$have_prop",
             "$undo",
             "$redo",
-            "$redo",
+            "$quit",
             "$teleport",
             "$steal",
             "$help",
@@ -1487,14 +1487,18 @@ impl Zmachine {
             "$have_prop" => self.debug_have_property(arg),
             "$steal" => self.debug_steal(arg),
             "$teleport" => self.debug_teleport(arg),
-            "$quit" => process::exit(0),
+            "$quit" => {
+                should_ask_again = false;
+                let _ = should_ask_again;
+                process::exit(0)
+            },
             // if undo/redo fails, should ask for input again
             // if they succeed, do nothing because zmachine state changed
             "$undo" => should_ask_again = !self.undo(),
             "$redo" => should_ask_again = !self.redo(),
             // unrecognized commands should ask for user input again
             _ => {
-                should_ask_again = false;
+                should_ask_again = true;
             }
         }
 
