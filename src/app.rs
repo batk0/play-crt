@@ -744,37 +744,28 @@ impl AppState {
             }
         }
         if disconnected || backend.is_finished() {
-            // Only return to menu if truly disconnected and no pending data re-checked
-            // Do a final try_recv to drain any remaining messages first
-            let mut has_more = false;
-            if let Some(b) = self.backend.as_ref() {
-                if b.try_recv().is_ok() {
-                    has_more = true;
-                }
-            }
-            if has_more {
-                // Don't return yet; leave data for next poll
-                return;
-            }
-            // Check again if backend reports finished and channel disconnected
-            let is_done = self
-                .backend
-                .as_ref()
-                .is_some_and(crate::backend::Backend::is_finished);
-            // We only auto-return if channel disconnected
-            if disconnected || is_done {
-                // Verify disconnected by trying once more
-                if let Some(b) = self.backend.as_ref() {
-                    match b.try_recv() {
-                        Err(TryRecvError::Disconnected) => {
-                            self.return_to_menu("Game ended — Returned to menu");
+            let mut drain_disconnected = false;
+            loop {
+                match backend.try_recv() {
+                    Ok(chunk) => {
+                        if let Some(filtered) = Self::sanitize_chunk(&chunk) {
+                            if filtered.contains("[Game ended") {
+                                continue;
+                            }
+                            self.grid.put_str(&filtered);
                         }
-                        Err(TryRecvError::Empty) if is_done && b.is_basic() => {
-                            self.return_to_menu("Game ended — Returned to menu");
-                        }
-                        _ => {}
+                    }
+                    Err(TryRecvError::Empty) => break,
+                    Err(TryRecvError::Disconnected) => {
+                        drain_disconnected = true;
+                        break;
                     }
                 }
+            }
+            disconnected |= drain_disconnected;
+            let is_done = backend.is_finished();
+            if disconnected || (is_done && backend.is_basic()) {
+                self.return_to_menu("Game ended — Returned to menu");
             }
         }
     }

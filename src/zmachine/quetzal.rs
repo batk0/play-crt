@@ -29,6 +29,9 @@ impl QuetzalSave {
             panic!("Can't find FORM header, bad save file?")
         }
 
+        if form_body.len() < 4 {
+            panic!("Save file truncated: FORM body too short (need IFZS header)");
+        }
         let chunks = &form_body[4..]; // skip the IFZS string at the start
         let mut offset = 0;
 
@@ -86,6 +89,12 @@ impl QuetzalSave {
     }
 
     fn read_chunk(data: &[u8]) -> (String, usize, &[u8]) {
+        if data.len() < 8 {
+            panic!(
+                "Truncated chunk header: expected at least 8 bytes, got {}",
+                data.len()
+            );
+        }
         let header = String::from_utf8_lossy(&data[0..4]).into_owned();
 
         let mut body_length = 0;
@@ -94,6 +103,13 @@ impl QuetzalSave {
         body_length += (data[6] as usize) << 8;
         body_length += data[7] as usize;
 
+        if data.len() < 8 + body_length {
+            panic!(
+                "Truncated chunk body: declared length {} but only {} bytes available",
+                body_length,
+                data.len() - 8
+            );
+        }
         let body = &data[8..(8 + body_length)];
 
         // chunks get padded with an empty 0 byte if they have an odd length
@@ -185,18 +201,19 @@ impl QuetzalSave {
             // zero bytes are followed by a length byte, indicating how many
             // 0s go between the previous non-zero byte (above) and the next
             } else {
+                let Some(&run) = compressed.get(index + 1) else {
+                    break;
+                };
                 // +1 for the 0 before the length byte:
-                let length = compressed[index + 1] as usize;
+                let length = run as usize;
                 uncompressed.extend(vec![0; length + 1]);
                 index += 2;
             }
         }
 
-        let difference = original.len() - uncompressed.len();
-
-        if difference > 0 {
-            uncompressed.extend(vec![0; difference]);
-        }
+        let difference = original.len().saturating_sub(uncompressed.len());
+        uncompressed.extend(vec![0; difference]);
+        uncompressed.truncate(original.len());
 
         // XOR uncompressed with original to restore
         self.memory = uncompressed
@@ -242,7 +259,7 @@ impl QuetzalSave {
         let mut frames = Vec::new();
         let mut offset = 0;
 
-        while offset < bytes.len() - 1 {
+        while offset + 8 <= bytes.len() {
             // variable lengths found here:
             let num_locals = bytes[offset + 3] & 0b0000_1111;
             let mut stack_length = 0;
@@ -252,6 +269,9 @@ impl QuetzalSave {
             // locals start @ byte 8, stack values start after locals
             // each value is a 2 byte word
             let end = offset + 8 + num_locals as usize * 2 + stack_length as usize * 2;
+            if end > bytes.len() {
+                break;
+            }
 
             let slice = &bytes[offset..end];
             let frame = Frame::from_bytes(slice);

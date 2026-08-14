@@ -143,6 +143,8 @@ where
             .and_then(|v| v.parse::<u64>().ok())
             .or(entry.size);
 
+        let max_bytes: u64 = entry.size.map_or(10 * 1024 * 1024, |s| s.saturating_add(8 * 1024));
+
         let mut reader = resp.into_reader();
 
         let mut out = fs::File::create(&part_path).map_err(|e| format!("create part file: {e}"))?;
@@ -159,6 +161,14 @@ where
             let n = std::io::Read::read(&mut reader, &mut buf).map_err(|e| format!("read: {e}"))?;
             if n == 0 {
                 break;
+            }
+            if total.saturating_add(n as u64) > max_bytes {
+                drop(out);
+                let _ = fs::remove_file(&part_path);
+                return Err(format!(
+                    "download exceeds size limit ({} bytes) for {}",
+                    max_bytes, entry.id
+                ));
             }
             out.write_all(&buf[..n])
                 .map_err(|e| format!("write part: {e}"))?;
@@ -297,6 +307,8 @@ where
         .and_then(|v| v.parse::<u64>().ok())
         .or(entry.size);
 
+    let max_bytes: u64 = entry.size.map_or(10 * 1024 * 1024, |s| s.saturating_add(8 * 1024));
+
     let mut reader = resp.into_reader();
     let mut out = fs::File::create(&part_path).map_err(|e| format!("create part file: {e}"))?;
     let mut hasher = if entry.sha256.is_some() {
@@ -312,6 +324,14 @@ where
         let n = std::io::Read::read(&mut reader, &mut buf).map_err(|e| format!("read: {e}"))?;
         if n == 0 {
             break;
+        }
+        if total.saturating_add(n as u64) > max_bytes {
+            drop(out);
+            let _ = fs::remove_file(&part_path);
+            return Err(format!(
+                "download exceeds size limit ({} bytes) for {}",
+                max_bytes, entry.id
+            ));
         }
         out.write_all(&buf[..n]).map_err(|e| format!("write part: {e}"))?;
         if let Some(h) = hasher.as_mut() {

@@ -531,8 +531,9 @@ impl Zmachine {
     fn tokenise(&mut self, text: &str, parse_addr: usize) {
         // v1-4 start storing @ byte 1, v5+ start @2;
         let start = if self.version <= 4 { 1 } else { 2 };
+        let max_words = self.memory.read_byte(parse_addr) as usize;
         let mut input = String::from(text);
-        let mut found = HashMap::new();
+        let mut found: HashMap<String, usize> = HashMap::new();
 
         for sep in &self.separators {
             input = input.replace(&sep.to_string(), &format!(" {} ", sep))
@@ -542,8 +543,11 @@ impl Zmachine {
             .split_whitespace()
             .filter(|token| !token.is_empty())
             .map(|token| {
-                let offset = found.entry(token).or_insert(0);
-                let position = text[*offset..].find(token).unwrap();
+                let offset = found.entry(token.to_owned()).or_insert(0);
+                let position = text
+                    .get(*offset..)
+                    .and_then(|s| s.find(token))
+                    .unwrap_or(0);
 
                 let dict_addr = self.check_dict(token);
                 let token_addr = *offset + position + start;
@@ -552,16 +556,17 @@ impl Zmachine {
 
                 (dict_addr, token.len(), token_addr)
             })
+            .take(max_words)
             .collect();
 
         let mut write = self.memory.get_writer(parse_addr + 1);
         write.byte(tokens.len() as u8);
 
-        tokens.iter().for_each(|&(dict_addr, len, token_addr)| {
+        for &(dict_addr, len, token_addr) in &tokens {
             write.word(dict_addr as u16);
             write.byte(len as u8);
             write.byte(token_addr as u8);
-        });
+        }
     }
 
     fn get_object_addr(&self, object: u16) -> usize {
@@ -791,7 +796,7 @@ impl Zmachine {
     }
 
     fn test_attr(&self, object: u16, attr: u16) -> u16 {
-        if attr as usize > self.attr_width * 8 {
+        if (attr as usize) >= self.attr_width * 8 {
             panic!("Can't test out-of-bounds attribute: {}", attr);
         }
 
@@ -803,7 +808,7 @@ impl Zmachine {
     }
 
     fn set_attr(&mut self, object: u16, attr: u16) {
-        if attr as usize > self.attr_width * 8 {
+        if (attr as usize) >= self.attr_width * 8 {
             panic!("Can't set out-of-bounds attribute: {}", attr);
         }
 
@@ -815,7 +820,7 @@ impl Zmachine {
     }
 
     fn clear_attr(&mut self, object: u16, attr: u16) {
-        if attr as usize > self.attr_width * 8 {
+        if (attr as usize) >= self.attr_width * 8 {
             panic!("Can't clear out-of-bounds attribute: {}", attr);
         }
 
@@ -1016,21 +1021,11 @@ impl Zmachine {
         QuetzalSave::make(pc, dynamic, original, frames, chksum, release, serial)
     }
 
-    fn restore_state(&mut self, data: &[u8]) {
-        let save = QuetzalSave::from_bytes(&data[..], &self.original_dynamic[..]);
-
-        // verify that the save if so the right game and that the memory is ok
-        if save.chksum != self.memory.read_word(0x1C) {
-            panic!("Invalid save, checksum is different");
-        }
-
-        if self.static_start < save.memory.len() {
-            panic!("Invalid save, memory is too long");
-        }
-
-        self.pc = save.pc;
-        self.frames = save.frames;
-        self.memory.write(0, save.memory.as_slice());
+    #[allow(dead_code)]
+    fn restore_state(&mut self, data: &[u8]) -> bool {
+        // Route through fallible path so malformed saves return failure
+        // instead of panicking (callers check the bool).
+        self.try_restore_state(data)
     }
 
     pub fn undo(&mut self) -> bool {
@@ -1046,9 +1041,22 @@ impl Zmachine {
         }
 
         let new_current = self.undos.pop().unwrap();
-        self.redos.push(self.current_state.take().unwrap());
+        let Some(current) = self.current_state.take() else {
+            // No current state to save — restore undos and fail gracefully.
+            self.undos.push(new_current);
+            return false;
+        };
+        self.redos.push(current);
 
-        self.restore_state(new_current.1.as_slice());
+        if !self.try_restore_state(new_current.1.as_slice()) {
+            // Restore failed — revert stacks.
+            if let Some(prev) = self.redos.pop() {
+                self.current_state = Some(prev);
+            }
+            self.undos.push(new_current);
+            self.ui.print("\n[Undo failed - save data corrupt.]\n");
+            return false;
+        }
         self.current_state = Some(new_current);
 
         true
@@ -1067,9 +1075,20 @@ impl Zmachine {
         }
 
         let new_current = self.redos.pop().unwrap();
-        self.undos.push(self.current_state.take().unwrap());
+        let Some(current) = self.current_state.take() else {
+            self.redos.push(new_current);
+            return false;
+        };
+        self.undos.push(current);
 
-        self.restore_state(new_current.1.as_slice());
+        if !self.try_restore_state(new_current.1.as_slice()) {
+            if let Some(prev) = self.undos.pop() {
+                self.current_state = Some(prev);
+            }
+            self.redos.push(new_current);
+            self.ui.print("\n[Redo failed - save data corrupt.]\n");
+            return false;
+        }
         self.current_state = Some(new_current);
 
         true
@@ -1590,11 +1609,16 @@ impl Zmachine {
 
         // cancel restore (sending an empty string or if base64 decode fails)
         if data.is_empty() || state.is_err() {
-            let instr = self.paused_instr.take().unwrap();
-            self.process_result(&instr, 0);
-        } else {
-            self.restore_state(state.unwrap().as_slice());
+            if let Some(instr) = self.paused_instr.take() {
+                self.process_result(&instr, 0);
+            }
+            return;
+        }
+        let bytes = state.unwrap();
+        if self.try_restore_state(bytes.as_slice()) {
             self.process_restore_result();
+        } else if let Some(instr) = self.paused_instr.take() {
+            self.process_result(&instr, 0);
         }
     }
 
@@ -1602,8 +1626,11 @@ impl Zmachine {
     // Loads a saved state _without_ processing a restore result (like the above)
     #[allow(dead_code)]
     pub fn load_savestate(&mut self, data: &str) {
-        let state = base64::decode(data).unwrap();
-        self.restore_state(state.as_slice());
+        let Ok(state) = base64::decode(data) else {
+            return;
+        };
+        // Ignore corrupt saves gracefully; caller can check return if needed.
+        let _ = self.try_restore_state(state.as_slice());
     }
 
     // GUI: inspect paused opcode (READ vs RESTORE vs SAVE)
@@ -2062,8 +2089,12 @@ impl Zmachine {
         file.read_to_end(&mut data).expect(
             "Error reading save file",
         );
-        self.restore_state(data.as_slice());
-        self.process_restore_result();
+        if self.try_restore_state(data.as_slice()) {
+            self.process_restore_result();
+        } else {
+            self.ui.print("Restore failed (bad save file).\n");
+            self.process_result(instr, 0);
+        }
     }
 
     fn process_restore_result(&mut self) {

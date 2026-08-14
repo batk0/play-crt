@@ -312,9 +312,13 @@ impl ZMachineSession {
                     Some(Opcode::OP0_181) => {
                         // SAVE — write to selected slot
                         if use_slots {
-                            let bytes = zm
-                                .paused_save_bytes()
-                                .unwrap_or_default();
+                            let Some(bytes) = zm.paused_save_bytes() else {
+                                zm.handle_save_result(false);
+                                let _ = output_tx.send(
+                                    "\n[Save failed: no snapshot available]\n".to_string(),
+                                );
+                                continue;
+                            };
                             let status = zm.status_string();
                             match saves::write_slot(&slot_game_id, slot_num, &bytes, &status) {
                                 Ok(()) => {
