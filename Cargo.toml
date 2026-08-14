@@ -2,7 +2,7 @@
 name = "play-crt"
 version = "0.1.0"
 edition = "2021"
-description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-pi shader, bottom switches)"
+description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-lottes PUBLIC DOMAIN shader, bottom switches)"
 license = "MIT"
 repository = "https://github.com/batk0/play-crt"
 keywords = ["z-machine", "zork", "crt", "sdl2", "retro", "basic"]

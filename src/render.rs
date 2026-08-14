@@ -1,16 +1,17 @@
-//! CRT rendering — bezel, glass, phosphor text and **crt-pi** scanlines.
+//! CRT rendering — bezel, glass, phosphor text and scanlines.
 //!
-//! The visual style is driven by `assets/shaders/crt-pi.glsl` (GPL-2.0+,
-//! © 2015-2016 davej, from `libretro/glsl-shaders`). That shader is the
-//! reference implementation; this file contains:
-//! - the SDL2 CPU fallback that ports its math via `crate::crt_pi`
-//!   (`CalcScanLine`, gamma, bloom, mask, barrel distortion approximation)
+//! The visual style is driven by the PUBLIC DOMAIN CRT shader
+//! `assets/shaders/crt-lottes.vert` / `.frag` (crt-lottes by Timothy Lottes,
+//! vendored as `crt-lottes.glsl`) for the GL path, and by the MIT CPU
+//! fallback in `crate::crt_pi` for the SDL2 path. This file contains:
+//! - the SDL2 CPU fallback that ports CRT math via `crate::crt_pi`
+//!   (scanline weighting, gamma, bloom, mask, barrel distortion)
 //! - the bezel/glass/bloom text that is unchanged regardless of path
 //!
 //! When an OpenGL context is available, `crate::crt_gl::CrtGl` compiles the
-//! same GLSL verbatim and can be used for a fullscreen-quad post-process
-//! (see `crt_gl.rs`). The CPU path below therefore stays pixel-identical to
-//! the shader's intent and is the fallback when GL is not available.
+//! PUBLIC DOMAIN lottes GLSL and can be used for a fullscreen-quad
+//! post-process (see `crt_gl.rs`). The CPU path stays visually matched to the
+//! shader's intent and is the fallback when GL is not available.
 
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
@@ -1132,7 +1133,7 @@ fn render_line_with_bloom(
     hum: f32,
     state: &ControlState,
 ) -> Result<(), String> {
-    // Bloom halo — matches crt-pi BLOOM_FACTOR intent: bright scanlines widen.
+    // Bloom halo — matches CRT BLOOM_FACTOR intent: bright scanlines widen.
     // SDL cannot do per-pixel bloom, so we approximate with two offset blits in
     // phosphor bloom at reduced alpha.
     let bloom_color = state.phosphor_bloom();
@@ -1284,14 +1285,14 @@ pub fn draw_scanlines_and_vignette_with_state(
     );
 }
 
-/// CPU port of crt-pi's `CalcScanLine` scanline generation.
+/// CPU scanline generation (MIT CRT).
 ///
 /// Uses `crate::crt_pi::scanline_weight_for_row` (which mirrors
-/// `CalcScanLineWeight` + `MULTISAMPLE` + `BLOOM_FACTOR`) to derive a per-row
-/// darkness alpha. The result is a black overlay whose opacity is stronger in
-/// the gaps between scanlines and weaker on the lines — identical curve to
-/// the GLSL. Scanlines are inset via `barrel_inset_for_y` so the tube's
-/// bulge is visible (shorter at top/bottom, full width at centerline).
+/// the GLSL `scanWeight` + multisample + `BLOOM_FACTOR`) to derive a
+/// per-row darkness alpha. The result is a black overlay whose opacity is
+/// stronger in the gaps between scanlines and weaker on the lines — same
+/// curve as the GLSL. Scanlines are inset via `barrel_inset_for_y` so the
+/// tube's bulge is visible (shorter at top/bottom, full width at centerline).
 #[allow(dead_code)]
 fn draw_scanlines(
     canvas: &mut Canvas<Window>,
@@ -1317,7 +1318,7 @@ fn draw_scanlines_with_state(
 ) {
     canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
     let params = state.crt_params();
-    // crt-pi filterWidth: InputSize.y≈glass_h, OutputSize.y≈WINDOW_H
+    // MIT CRT filterWidth: InputSize.y≈glass_h, OutputSize.y≈WINDOW_H
     let filt = crt_pi::filter_width(i32_to_f32(glass_h), i32_to_f32(window_h_i32()));
 
     for y in glass_y..glass_y + glass_h {
@@ -1350,7 +1351,7 @@ fn draw_scanlines_with_state(
     }
 }
 
-/// Aperture/shadow mask — mirrors `MASK_TYPE 1` / `2` in crt-pi.glsl.
+/// Aperture/shadow mask — mirrors the CRT shader's two-stripe mask (lottes PUBLIC DOMAIN / CPU MIT fallback).
 ///
 /// The shader modulates `colour * mask` per fragment where mask alternates
 /// every 2 or 3 pixels. Here we approximate with thin vertical overlays at

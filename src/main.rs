@@ -73,7 +73,7 @@ fn main() -> Result<(), String> {
 
     let (sdl, video, ttf) = sdl_setup::init_sdl()?;
     let mut canvas = sdl_setup::create_window(&video)?;
-    // Optional crt-pi GL path: compile the shader at startup and keep it alive.
+    // Optional PUBLIC DOMAIN CRT GL path (crt-lottes): compile the shader at startup and keep it alive.
     let _crt_gl: Option<crt_gl::CrtGl> = match crt_gl::CrtGl::try_new(&video, canvas.window()) {
         Ok(g) => {
             if std::env::var("DEBUG").is_ok() {

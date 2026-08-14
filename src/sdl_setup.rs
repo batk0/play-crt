@@ -18,7 +18,7 @@ pub fn create_window(
     video: &sdl2::VideoSubsystem,
 ) -> Result<sdl2::render::Canvas<sdl2::video::Window>, String> {
     use crate::constants::{WINDOW_H, WINDOW_W};
-    // Request GL 3.3 core for the optional crt-pi shader path (glow).
+    // Request GL 3.3 core for the optional PUBLIC DOMAIN CRT shader path (crt-lottes via glow).
     // This is set before window creation and is harmless for the SDL Canvas path.
     {
         let gl_attr = video.gl_attr();
@@ -29,7 +29,7 @@ pub fn create_window(
     }
     let window = video
         .window(
-            "PLAY-CRT  •  80×24  •  VT323 phosphor (crt-pi)",
+            "PLAY-CRT  •  80×24  •  VT323 phosphor (CRT)",
             WINDOW_W,
             WINDOW_H,
         )

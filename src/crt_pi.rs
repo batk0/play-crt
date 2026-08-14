@@ -1,19 +1,19 @@
-//! `crt_pi` — Rust port of the **crt-pi** CRT shader algorithm.
+//! `crt_pi` — Rust CPU implementation of CRT effects for the SDL2 fallback.
 //!
-//! Source shader: `assets/shaders/crt-pi.glsl` (originally
-//! `libretro/glsl-shaders/crt/shaders/crt-pi.glsl`, GPL-2.0+, © 2015-2016 davej).
-//! This file re-implements the same math in pure Rust for the SDL2 CPU
-//! renderer path. The GLSL text remains GPL-2.0+; this Rust translation is
-//! MIT (same as the rest of `play-crt`) — algorithms are not copyrightable,
-//! but we credit the original and keep the GLSL verbatim under its license.
+//! The GL path now uses `assets/shaders/crt-lottes.vert` / `.frag`
+//! (PUBLIC DOMAIN CRT STYLED SCAN-LINE SHADER by Timothy Lottes, vendored
+//! as `crt-lottes.glsl`). This file provides similar effects in pure Rust
+//! for the SDL2 CPU renderer so the fallback has no GL dependency.
 //!
 //! Covered effects:
-//! - gamma-aware scanline weighting (`CalcScanLine` / `CalcScanLineWeight`)
-//! - bloom factor, mask type (green/magenta, Trinitron)
-//! - barrel distortion for curvature (optional, CPU-approximated via vignette)
+//! - gamma-aware scanline weighting (scanline weight + multisample)
+//! - bloom factor, aperture mask (green/magenta, Trinitron)
+//! - barrel distortion for curvature
 //! - `filterWidth = InputSize.y / OutputSize.y / 3` multisample
 //!
-//! See `assets/shaders/LICENSE.crt-pi` for license details.
+//! This CPU module is MIT (© 2026 batk0, clean-room). The GL shader is
+//! PUBLIC DOMAIN (lottes). They share similar tunable defaults (see
+//! `CrtPiParams`) but are now separate paths — no copyleft-licensed code remains.
 
 #![allow(clippy::pedantic)]
 
@@ -40,9 +40,9 @@ pub fn curvature_override() -> Option<CrtPiParams> {
     override_slot().lock().ok().and_then(|g| *g)
 }
 
-/// Default crt-pi parameters — tuned for obviously visible barrel bulge
-/// on `80×24` text. Original `#else` defaults are `0.10`/`0.25` (≈ invisible at
-/// this resolution); we bump both axes to `0.20` so curvature is unmistakable
+/// Default CRT parameters — tuned for obviously visible barrel bulge
+/// on `80×24` text. Early defaults of `0.10`/`0.25` were too subtle at
+/// this resolution; we use `0.20`/`0.20` so curvature is unmistakable
 /// while staying readable. Override via `CrtPiParams` or `--curvature`.
 pub const CURVATURE_X: f32 = 0.20;
 pub const CURVATURE_Y: f32 = 0.20;
@@ -86,14 +86,14 @@ impl Default for CrtPiParams {
     }
 }
 
-/// `CalcScanLineWeight` from crt-pi.glsl: `max(1 - dist²*weight, gap)`.
+/// Scanline weight core: `max(1 - dist²*weight, gap)` — same curve as the CPU CRT shader (and lottes GL path).
 #[inline]
 #[must_use]
 pub fn calc_scanline_weight(dist: f32, params: &CrtPiParams) -> f32 {
     (1.0 - dist * dist * params.scanline_weight).max(params.scanline_gap)
 }
 
-/// `CalcScanLine` with optional 3-tap multisample (`filterWidth` from shader).
+/// Scanline with optional 3-tap multisample (`filterWidth` from shader).
 /// When `filter_width == 0`, multisample collapses to single tap.
 #[inline]
 #[must_use]
@@ -145,7 +145,7 @@ pub fn scanline_weight_for_row_compat(y: i32, glass_y: i32, params: &CrtPiParams
     scanline_weight_for_row(y, glass_y, params, filter_width, 1.0)
 }
 
-/// Compute crt-pi's `filterWidth = (InputSize.y / OutputSize.y) / 3`.
+/// Compute `filterWidth = (InputSize.y / OutputSize.y) / 3` (as in the shader).
 #[must_use]
 pub fn filter_width(input_h: f32, output_h: f32) -> f32 {
     if output_h <= 0.0 {
@@ -178,7 +178,7 @@ pub fn gamma_in(colour: [f32; 3], params: &CrtPiParams) -> [f32; 3] {
     ]
 }
 
-/// Barrel distortion (curvature) — mirrors `Distort()` in crt-pi.glsl.
+/// Barrel distortion (curvature) — maps 0..1 UV through radial warp.
 /// `coord` in 0..1, `screen_scale = TextureSize / InputSize`.
 /// Returns `None` if out-of-bounds (shader would discard).
 #[must_use]
@@ -265,9 +265,9 @@ pub fn mask_for_x(x: f32, mask_type: u8, mask_brightness: f32) -> [f32; 3] {
     }
 }
 
-/// Vignette factor (0..1) — not part of crt-pi core but used for CPU
-/// curvature approximation. Stronger than the old `0.6..1.0` range so the
-/// bulge edge is obvious; corners fall to ≈`0.35` instead of `0.6`.
+/// Vignette factor (0..1) — used for CPU curvature approximation.
+/// Stronger than a subtle `0.6..1.0` range so the bulge edge is obvious;
+/// corners fall to ≈`0.35` instead of `0.6`.
 #[must_use]
 pub fn vignette_factor(
     x: f32,

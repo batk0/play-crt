@@ -1,10 +1,15 @@
-//! `crt_gl` — optional OpenGL path for the crt-pi shader via `glow`.
+//! `crt_gl` — optional OpenGL path for the PUBLIC DOMAIN CRT shader via `glow`.
 //!
-//! This module compiles `assets/shaders/crt-pi.vert` / `.frag` (derived from
-//! `assets/shaders/crt-pi.glsl`, GPL-2.0+, © 2015-2016 davej) into a GL 3.3
-//! core program. It is intentionally **optional and fallible**: if the window
-//! cannot provide a GL context or `glow` fails, the caller falls back to the
+//! This module compiles `assets/shaders/crt-lottes.vert` / `.frag` (PUBLIC
+//! DOMAIN CRT STYLED SCAN-LINE SHADER by Timothy Lottes) into a GL 3.3 core
+//! program. Original single-file shader vendored as `crt-lottes.glsl`.
+//! It is intentionally **optional and fallible**: if the window cannot
+//! provide a GL context or `glow` fails, the caller falls back to the
 //! SDL2 CPU path (`crate::crt_pi` + `crate::render`).
+//!
+//! The CPU path (`crate::crt_pi`) remains a separate MIT implementation that
+//! mirrors the former MIT shader's curvature/scanline math; the GL path is
+//! PUBLIC DOMAIN (lottes). No copyleft-licensed code remains.
 //!
 //! Design:
 //! - `CrtGl::try_new(&VideoSubsystem, &Window)` — creates GL context + `glow::Context`
@@ -15,7 +20,7 @@
 //!   changing the grid/backend code.
 //!
 //! The shader source is embedded via `include_str!` so `cargo build` validates
-//! that the `.glsl` files exist.
+//! that the shader files exist.
 
 #![allow(clippy::pedantic)]
 
@@ -24,12 +29,10 @@ use std::rc::Rc;
 use glow::HasContext as _;
 
 /// Embedded shader sources — proves at compile time they are present.
-pub const VERT_SRC: &str = include_str!("../assets/shaders/crt-pi.vert");
-pub const FRAG_SRC: &str = include_str!("../assets/shaders/crt-pi.frag");
-#[allow(dead_code)]
-pub const COMBINED_SRC: &str = include_str!("../assets/shaders/crt-pi.glsl");
+pub const VERT_SRC: &str = include_str!("../assets/shaders/crt-lottes.vert");
+pub const FRAG_SRC: &str = include_str!("../assets/shaders/crt-lottes.frag");
 
-/// Minimal wrapper around a compiled crt-pi GL program.
+/// Minimal wrapper around a compiled CRT GL program.
 ///
 /// Holds the `glow::Context` so the context stays current for the window's
 /// lifetime. When dropped, the GL program is deleted.
@@ -39,7 +42,7 @@ pub struct CrtGl {
 }
 
 impl CrtGl {
-    /// Try to create a GL context for `window` and compile the crt-pi shaders.
+    /// Try to create a GL context for `window` and compile the CRT shaders.
     /// On success the context is current and `program` is ready for use.
     /// On failure returns `Err(String)` — caller should use the CPU fallback.
     ///
@@ -78,20 +81,36 @@ impl CrtGl {
         unsafe {
             gl.use_program(Some(program));
             let p = crate::crt_pi::CrtPiParams::default();
-            // Tuned defaults: 0.20/0.20 gives an obvious bulge on 80×24; orig 0.10/0.25 is too subtle.
-            // Must match `crate::crt_pi::CURVATURE_X/Y` and `crt-pi.frag`, including --curvature override.
+            // Lottes uses warpX/warpY instead of CURVATURE_X/Y. Map our
+            // 0.20 defaults to lottes defaults (0.031 / 0.041) so --curvature
+            // still has an effect on the GL path. If the shader was built
+            // without PARAMETER_UNIFORM (default defines), these uniforms won't
+            // exist and set_uniform is a no-op — shader uses its #define warp.
+            // When PARAMETER_UNIFORM is enabled, warpX/Y are live uniforms.
+            let warp_x = p.curvature_x * 0.155;
+            let warp_y = p.curvature_y * 0.205;
+            set_uniform_f32(&gl, program, "warpX", warp_x);
+            set_uniform_f32(&gl, program, "warpY", warp_y);
+            // Also set legacy CURVATURE names for any shader that still expects them
+            // (no-op if not present).
             set_uniform_f32(&gl, program, "CURVATURE_X", p.curvature_x);
             set_uniform_f32(&gl, program, "CURVATURE_Y", p.curvature_y);
-            set_uniform_f32(&gl, program, "MASK_BRIGHTNESS", p.mask_brightness);
-            set_uniform_f32(&gl, program, "SCANLINE_WEIGHT", p.scanline_weight);
-            set_uniform_f32(&gl, program, "SCANLINE_GAP_BRIGHTNESS", p.scanline_gap);
-            set_uniform_f32(&gl, program, "BLOOM_FACTOR", p.bloom_factor);
-            set_uniform_f32(&gl, program, "INPUT_GAMMA", p.input_gamma);
-            set_uniform_f32(&gl, program, "OUTPUT_GAMMA", p.output_gamma);
-            // Log which uniforms the GL path will actually use — helps verify CURVATURE isn't zeroed.
+            // Lottes other params — set to defaults so uniform path matches defines
+            set_uniform_f32(&gl, program, "hardScan", -8.0);
+            set_uniform_f32(&gl, program, "hardPix", -3.0);
+            set_uniform_f32(&gl, program, "maskDark", 0.5);
+            set_uniform_f32(&gl, program, "maskLight", 1.5);
+            set_uniform_f32(&gl, program, "shadowMask", 3.0);
+            set_uniform_f32(&gl, program, "brightBoost", 1.0);
+            set_uniform_f32(&gl, program, "hardBloomPix", -1.5);
+            set_uniform_f32(&gl, program, "hardBloomScan", -2.0);
+            set_uniform_f32(&gl, program, "bloomAmount", 0.15);
+            set_uniform_f32(&gl, program, "shape", 2.0);
+            set_uniform_f32(&gl, program, "scaleInLinearGamma", 1.0);
+            // Log which uniforms the GL path will actually use
             if std::env::var("DEBUG").is_ok() {
                 eprintln!(
-                    "crt-pi GL uniforms: CURVATURE {} / {} (CURVATURE enabled in crt-pi.frag)",
+                    "crt-lottes GL uniforms: warpX {warp_x:.3} warpY {warp_y:.3} (from CURVATURE {} / {}; lottes PUBLIC DOMAIN)",
                     p.curvature_x, p.curvature_y
                 );
             }
@@ -164,7 +183,7 @@ unsafe fn compile_program(
         let log = gl.get_shader_info_log(vert);
         gl.delete_shader(vert);
         gl.delete_program(program);
-        return Err(format!("crt-pi vert compile failed: {log}"));
+        return Err(format!("crt-lottes vert compile failed: {log}"));
     }
 
     let frag = gl
@@ -177,7 +196,7 @@ unsafe fn compile_program(
         gl.delete_shader(vert);
         gl.delete_shader(frag);
         gl.delete_program(program);
-        return Err(format!("crt-pi frag compile failed: {log}"));
+        return Err(format!("crt-lottes frag compile failed: {log}"));
     }
 
     gl.attach_shader(program, vert);
@@ -192,7 +211,7 @@ unsafe fn compile_program(
     if !gl.get_program_link_status(program) {
         let log = gl.get_program_info_log(program);
         gl.delete_program(program);
-        return Err(format!("crt-pi link failed: {log}"));
+        return Err(format!("crt-lottes link failed: {log}"));
     }
     Ok(program)
 }

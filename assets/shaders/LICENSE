@@ -1,0 +1,20 @@
+PUBLIC DOMAIN CRT STYLED SCAN-LINE SHADER by Timothy Lottes
+
+  This shader is PUBLIC DOMAIN as stated in its header:
+  "PUBLIC DOMAIN CRT STYLED SCAN-LINE SHADER by Timothy Lottes
+   — Please take and use, change, or whatever."
+
+  Files in this directory covered by this notice:
+    - crt-lottes.glsl  (vendored single-file original from
+        https://raw.githubusercontent.com/libretro/glsl-shaders/master/crt/shaders/crt-lottes.glsl)
+    - crt-lottes.vert  (GL 3.3 core split/adaptation for glow)
+    - crt-lottes.frag  (GL 3.3 core split/adaptation for glow)
+  All three are PUBLIC DOMAIN — no copyright, no license conditions.
+  See the header in each file for the Timothy Lottes notice.
+
+  The CPU fallback implementation (src/crt_pi.rs + SDL2 path in src/render.rs)
+  is a separate MIT-licensed implementation (© 2026 batk0) that approximates
+  similar CRT effects (scanlines, curvature, bloom) for the SDL2 renderer.
+  It is not derived from crt-lottes and remains MIT (see root LICENSE).
+
+   No copyleft-licensed code is present in this directory.
