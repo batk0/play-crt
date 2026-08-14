@@ -42,6 +42,10 @@ lto = true
 opt-level = 3
 strip = true
 
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
 # cargo-dist configuration for GitHub Releases binaries
 # https://opensource.axo.dev/cargo-dist/book/reference/config.html
 [workspace.metadata.dist]
