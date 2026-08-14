@@ -13,7 +13,7 @@ Backend is a **pure-Rust Z-machine** (vendored [encrusted](https://github.com/de
 ### Homebrew (tap)
 
 ```bash
-brew install akayukov/tap/play-crt
+brew install batk0/tap/play-crt
 play-crt --story /path/to/game.z3
 play-crt --help
 ```

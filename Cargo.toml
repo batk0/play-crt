@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "CRT monitor frontend for Z-machine and text games — SDL2 + phosphor CRT shader"
 license = "MIT"
-repository = "https://github.com/akayukov/play-crt"
+repository = "https://github.com/batk0/play-crt"
 keywords = ["zork", "z-machine", "crt", "sdl2", "retro"]
 readme = "README.md"
 
