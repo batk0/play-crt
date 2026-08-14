@@ -121,11 +121,31 @@ impl Frame {
     }
 
     pub fn stack_pop(&mut self) -> u16 {
-        self.stack.pop().expect("Can't pop off an empty stack!")
+        match self.stack.pop() {
+            Some(v) => v,
+            None => {
+                if std::env::var("DEBUG").is_ok() {
+                    eprintln!("[frame] stack_pop on empty stack — returning 0");
+                }
+                0
+            }
+        }
     }
 
     pub fn stack_peek(&self) -> u16 {
-        *self.stack.last().expect("Can't peek on an empty stack!")
+        match self.stack.last() {
+            Some(v) => *v,
+            None => {
+                if std::env::var("DEBUG").is_ok() {
+                    eprintln!("[frame] stack_peek on empty stack — returning 0");
+                }
+                0
+            }
+        }
+    }
+
+    pub fn is_stack_empty(&self) -> bool {
+        self.stack.is_empty()
     }
 
     pub fn to_string(&self) -> String {
@@ -161,8 +181,9 @@ impl Frame {
         bytes.push((self.resume & 0x00_00FF) as u8);
 
         let mut flags = self.locals.len() as u8; // 0b0000vvvv
-        if self.store.is_some() {
-            flags += 0b0001_0000;
+        // Quetzal spec: bit 4 == 1 means "no store / discard"
+        if self.store.is_none() {
+            flags |= 0b0001_0000;
         }
 
         let mut args_supplied = 0b0000_0000;

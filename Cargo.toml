@@ -10,7 +10,6 @@ readme = "README.md"
 
 [dependencies]
 sdl2 = { version = "0.38", features = ["ttf"] }
-rfd = "0.15"
 glow = "0.16"
 zip = "2"
 

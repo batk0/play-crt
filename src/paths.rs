@@ -84,7 +84,12 @@ pub fn downloads_dir() -> PathBuf {
 
 /// Ensure the standard layout exists. Safe to call repeatedly.
 pub fn ensure_layout() -> Result<(), String> {
-    for dir in [data_dir(), stories_dir(), downloads_dir()] {
+    for dir in [
+        data_dir(),
+        stories_dir(),
+        downloads_dir(),
+        data_dir().join("saves"),
+    ] {
         fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     }
     Ok(())

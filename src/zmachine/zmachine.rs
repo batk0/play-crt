@@ -316,24 +316,33 @@ impl Zmachine {
     }
 
     fn stack_push(&mut self, value: u16) {
-        self.frames
-            .last_mut()
-            .expect("Can't push to stack, no frames!")
-            .stack_push(value);
+        if let Some(frame) = self.frames.last_mut() {
+            frame.stack_push(value);
+        } else if std::env::var("DEBUG").is_ok() {
+            eprintln!("[zmachine] stack_push with no frames — dropping value");
+        }
     }
 
     fn stack_pop(&mut self) -> u16 {
-        self.frames
-            .last_mut()
-            .expect("Can't pop stack, no frames!")
-            .stack_pop()
+        if let Some(frame) = self.frames.last_mut() {
+            frame.stack_pop()
+        } else {
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("[zmachine] stack_pop with no frames — returning 0");
+            }
+            0
+        }
     }
 
     fn stack_peek(&mut self) -> u16 {
-        self.frames
-            .last_mut()
-            .expect("Can't peek stack, no frames!")
-            .stack_peek()
+        if let Some(frame) = self.frames.last() {
+            frame.stack_peek()
+        } else {
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("[zmachine] stack_peek with no frames — returning 0");
+            }
+            0
+        }
     }
 
     fn read_variable(&mut self, index: u8) -> u16 {
@@ -370,8 +379,14 @@ impl Zmachine {
         #[allow(unreachable_patterns)]
         match index {
             0 => {
-                self.stack_pop();
-                self.stack_push(value);
+                // For SP, writes are "peek then store" — replace top of
+                // stack, or push if empty (defensive for truncated restores).
+                if self.frames.last().map_or(true, |f| f.is_stack_empty()) {
+                    self.stack_push(value);
+                } else {
+                    self.stack_pop();
+                    self.stack_push(value);
+                }
             }
             1..=15 => self.write_local(index - 1, value),
             16..=255 => self.write_global(index - 16, value),
@@ -1492,14 +1507,10 @@ impl Zmachine {
             }
 
             match instr.opcode {
-                // SAVE
+                // SAVE — pause so the GUI backend can write to the selected slot file.
                 Opcode::OP0_181 => {
-                    let pc = instr.next - 1;
-                    let state = self.make_save_state(pc);
-                    self.send_save_message("save", &state);
-
-                    // Advance the pc, assuming that the save was successful
-                    self.process_save_result(&instr);
+                    self.paused_instr = Some(instr);
+                    return false;
                 }
                 // RESTORE (breaks loop)
                 Opcode::OP0_182 => {
@@ -1595,10 +1606,105 @@ impl Zmachine {
         self.restore_state(state.as_slice());
     }
 
-    // GUI: inspect paused opcode (READ vs RESTORE)
+    // GUI: inspect paused opcode (READ vs RESTORE vs SAVE)
     #[allow(dead_code)]
     pub fn paused_opcode(&self) -> Option<Opcode> {
         self.paused_instr.as_ref().map(|i| i.opcode)
+    }
+
+    /// Return status string "West of House - 10/0" etc for save metadata.
+    #[allow(dead_code)]
+    pub fn status_string(&self) -> String {
+        let (left, right) = self.get_status();
+        format!("{left} - {right}")
+    }
+
+    /// For a paused SAVE (OP0_181), produce the Quetzal bytes that should be
+    /// written to the selected slot. Returns None if not paused on SAVE.
+    #[allow(dead_code)]
+    pub fn paused_save_bytes(&self) -> Option<Vec<u8>> {
+        let instr = self.paused_instr.as_ref()?;
+        if instr.opcode != Opcode::OP0_181 {
+            return None;
+        }
+        let pc = instr.next - 1;
+        Some(self.make_save_state(pc))
+    }
+
+    /// Complete a paused SAVE: `success==true` stores 1 / branches accordingly,
+    /// `false` stores 0.
+    #[allow(dead_code)]
+    pub fn handle_save_result(&mut self, success: bool) {
+        let instr = self
+            .paused_instr
+            .take()
+            .expect("handle_save_result with no paused SAVE");
+        debug_assert_eq!(instr.opcode, Opcode::OP0_181);
+        let val = if success { 1 } else { 0 };
+        self.process_result(&instr, val);
+    }
+
+    /// Complete a paused RESTORE using raw Quetzal bytes (already decoded).
+    /// `data == None` means cancel (store 0). Handles checksum / corruption
+    /// gracefully — failure also cancels.
+    #[allow(dead_code)]
+    pub fn handle_restore_bytes(&mut self, data: Option<Vec<u8>>) {
+        let instr = self
+            .paused_instr
+            .take()
+            .expect("handle_restore_bytes with no paused RESTORE");
+        debug_assert_eq!(instr.opcode, Opcode::OP0_182);
+        if let Some(bytes) = data {
+            if self.try_restore_state(&bytes) {
+                self.process_restore_result();
+                return;
+            }
+        }
+        self.process_result(&instr, 0);
+    }
+
+    /// Try to restore raw Quetzal bytes into memory/pc/frames.
+    /// Returns true on success, false if data is corrupt or checksum mismatch.
+    #[allow(dead_code)]
+    pub fn try_restore_state(&mut self, data: &[u8]) -> bool {
+        // QuetzalSave::from_bytes panics on bad data; catch it.
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            QuetzalSave::from_bytes(data, &self.original_dynamic)
+        }));
+        let save = match result {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        if save.chksum != self.memory.read_word(0x1C) {
+            return false;
+        }
+        if self.static_start < save.memory.len() {
+            return false;
+        }
+        if save.pc == 0 || save.frames.is_empty() {
+            return false;
+        }
+        self.pc = save.pc;
+        self.frames = save.frames;
+        self.memory.write(0, save.memory.as_slice());
+        true
+    }
+
+    /// Initial restore for slot auto-load at game start.
+    /// Restores state and then applies the normal restore success handling
+    /// (store 2 / branch) so the PC points *after* the original SAVE. This
+    /// matches the behaviour of `handle_restore_bytes` for in-game RESTORE
+    /// and prevents the next `step` from decoding the SAVE's operand byte as
+    /// an opcode (which would often be `INC_CHK (SP)` on an empty stack).
+    #[allow(dead_code)]
+    pub fn initial_restore(&mut self, data: &[u8]) -> bool {
+        if !self.try_restore_state(data) {
+            return false;
+        }
+        // The saved PC is the SAVE's operand (`next - 1`). Advance past it
+        // exactly as a successful RESTORE would.
+        self.process_restore_result();
+        true
     }
 
     #[allow(dead_code)]
