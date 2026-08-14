@@ -5,8 +5,20 @@ edition = "2021"
 description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-lottes PUBLIC DOMAIN shader, bottom switches)"
 license = "MIT"
 repository = "https://github.com/batk0/play-crt"
-keywords = ["z-machine", "zork", "crt", "sdl2", "retro", "basic"]
+homepage = "https://github.com/batk0/play-crt"
+documentation = "https://github.com/batk0/play-crt#readme"
 readme = "README.md"
+keywords = ["z-machine", "zork", "crt", "sdl2", "retro", "basic"]
+categories = ["games", "emulators"]
+authors = ["batk0"]
+
+[[bin]]
+name = "play-crt"
+path = "src/main.rs"
+
+[features]
+bundled = ["sdl2/bundled"]
+default = []
 
 [dependencies]
 sdl2 = { version = "0.38", features = ["ttf"] }
@@ -29,3 +41,18 @@ hex = "0.4"
 lto = true
 opt-level = 3
 strip = true
+
+# cargo-dist configuration for GitHub Releases binaries
+# https://opensource.axo.dev/cargo-dist/book/reference/config.html
+[workspace.metadata.dist]
+cargo-dist-version = "0.32.0"
+ci = ["github"]
+installers = ["shell", "powershell", "homebrew"]
+tap = "batk0/homebrew-tap"
+targets = ["x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+include = ["assets/fonts/VT323-Regular.ttf", "assets/fonts/OFL.txt", "assets/shaders/crt-lottes.*", "assets/shaders/LICENSE", "README.md", "LICENSE"]
+publish-jobs = ["homebrew"]
+allow-dirty = ["ci"]
+# Ensure Windows builds use bundled SDL2 (no separate SDL2 install required)
+[workspace.metadata.dist.overrides.x86_64-pc-windows-msvc]
+features = ["bundled"]

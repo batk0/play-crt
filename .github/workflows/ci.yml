@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    name: check / clippy / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Install SDL2 deps (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev pkg-config
+
+      - name: cargo check
+        run: cargo check --locked
+
+      - name: cargo clippy
+        run: cargo clippy --locked -- -D warnings
+
+      - name: cargo test
+        run: cargo test --locked
+
+  # Optional: ensure cargo-dist plan is valid without building all targets
+  dist-plan:
+    name: cargo dist plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-dist
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.32.0/cargo-dist-installer.sh | sh
+      - name: cargo dist plan
+        run: |
+          ~/.cargo/bin/dist plan --output-format=json > dist-plan.json
+          cat dist-plan.json
+          jq -e '.ci.github.artifacts_matrix' dist-plan.json >/dev/null || (echo "dist plan missing artifacts_matrix"; exit 1)
