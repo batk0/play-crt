@@ -227,9 +227,9 @@ impl Zmachine {
 
     #[allow(non_snake_case)]
     fn default_alphabet() -> [Vec<String>; 3] {
-        let A0 = " ..=..abcdefghijklmnopqrstuvwxyz";
-        let A1 = " ..=..ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        let A2 = " ..=..=\n0123456789.,!?_#'\"/\\-:()";
+        let A0 = " .....abcdefghijklmnopqrstuvwxyz";
+        let A1 = " .....ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let A2 = " .....=\n0123456789.,!?_#'\"/\\-:()";
 
         [
             Zmachine::to_alphabet_entry(A0),
@@ -245,10 +245,10 @@ impl Zmachine {
         if alphabet_addr == 0 {
             Zmachine::default_alphabet()
         } else {
-            let A0 = format!(" ..=..{}", str::from_utf8(memory.read(alphabet_addr, 26)).expect("bad alphabet table A0!"));
-            let A1 = format!(" ..=..{}", str::from_utf8(memory.read(alphabet_addr + 26, 26)).expect("bad alphabet table A1!"));
+            let A0 = format!(" .....{}", str::from_utf8(memory.read(alphabet_addr, 26)).expect("bad alphabet table A0!"));
+            let A1 = format!(" .....{}", str::from_utf8(memory.read(alphabet_addr + 26, 26)).expect("bad alphabet table A1!"));
             // First two characters are ignored and accounted for in our padding.
-            let A2 = format!(" ..=..=\n{}", str::from_utf8(memory.read(alphabet_addr + 26 + 26 + 2, 24)).expect("Bad alphabet table A2!"));
+            let A2 = format!(" .....=\n{}", str::from_utf8(memory.read(alphabet_addr + 26 + 26 + 2, 24)).expect("Bad alphabet table A2!"));
 
             [
                 Zmachine::to_alphabet_entry(&A0),
@@ -438,8 +438,9 @@ impl Zmachine {
                     (6, &Alphabet(2)) => Tenbit1,
                     (_, &Tenbit1) => Tenbit2(zchar),
                     (_, &Tenbit2(first)) => {
-                        let letter = ((first << 5) + zchar) as char;
-                        zstring.push_str(&letter.to_string());
+                        let code = u32::from(u16::from(first) << 5 | u16::from(zchar));
+                        let ch = char::from_u32(code).unwrap_or('\u{FFFD}');
+                        zstring.push(ch);
                         Alphabet(0)
                     }
                     // get the abbrev at this addr
@@ -736,17 +737,16 @@ impl Zmachine {
         // by convention, the property table for object #1 is located AFTER
         // the last object in the object table:
         let obj_table_end = self.get_object_prop_table_addr(1);
-        let obj_size = self.attr_width + if self.version <= 3 { 3 } else { 9 } + 2;
 
         // v1-3 have a max of 255 objects, v4+ can have up to 65535
-        ((obj_table_end - self.obj_table_addr) / obj_size) as u16
+        ((obj_table_end - self.obj_table_addr) / self.obj_size) as u16
     }
 
     fn add_object_children(&self, parent: &mut Object) {
         // follow linked list of siblings to get all children:
         // Parent
         //   |
-        // Child -- Sibling -- Sibling -- Sibling ..=
+        // Child -- Sibling -- Sibling -- Sibling ...
         let mut next = self.get_child(parent.number);
 
         while next > 0 {
@@ -832,6 +832,9 @@ impl Zmachine {
     }
 
     fn get_default_prop(&self, property_number: u16) -> u16 {
+        if property_number == 0 {
+            return 0;
+        }
         let word_index = (property_number - 1) as usize;
         let addr = self.prop_defaults + word_index * 2;
 
@@ -956,6 +959,11 @@ impl Zmachine {
 
     fn put_prop(&mut self, object: u16, property_number: u16, value: u16) {
         let prop = self.find_prop(object, property_number);
+
+        // Missing property: find_prop returned zero property (addr 0 len 0)
+        if prop.addr == 0 && prop.len == 0 {
+            return;
+        }
 
         if prop.len == 1 {
             self.memory.write_byte(prop.addr, value as u8);
@@ -1886,12 +1894,28 @@ impl Zmachine {
 
     // OP2_23
     fn do_div(&self, a: u16, b: u16) -> u16 {
-        (a as i16).wrapping_div(b as i16) as u16
+        if b == 0 {
+            return 0;
+        }
+        let ai = a as i16;
+        let bi = b as i16;
+        if ai == i16::MIN && bi == -1 {
+            return 0;
+        }
+        ai.wrapping_div(bi) as u16
     }
 
     // OP2_24
     fn do_mod(&self, a: u16, b: u16) -> u16 {
-        (a as i16 % b as i16) as u16
+        if b == 0 {
+            return 0;
+        }
+        let ai = a as i16;
+        let bi = b as i16;
+        if ai == i16::MIN && bi == -1 {
+            return 0;
+        }
+        (ai % bi) as u16
     }
 
     // OP1_128
@@ -2251,10 +2275,10 @@ impl Zmachine {
         let text_addr = text_addr as usize;
         let parse_addr = parse_addr as usize;
 
-        // versions 1-4 have to store an extra 0, so the max length is 1 less
+        // versions 1-4 have to store an extra 0, so the max length is 1 less (saturating)
         let mut max_length = self.memory.read_byte(text_addr as usize);
         if self.version <= 4 {
-            max_length -= 1;
+            max_length = max_length.saturating_sub(1);
         }
 
         raw.truncate(max_length as usize);
@@ -2291,15 +2315,16 @@ impl Zmachine {
 
     // VAR_231
     fn do_random(&mut self, range: u16) -> u16 {
-        let range = range as i16;
+        let range_i = range as i16;
 
-        if range <= 0 {
-            self.rng.reseed([range as u32, 0, 0, 0]);
+        if range_i <= 0 {
+            self.rng.reseed([range_i as u32, 0, 0, 0]);
             0
-        } else if range == 1 {
+        } else if range_i == 1 {
             1
         } else {
-            (self.rng.gen::<f32>() * f32::from(range)).ceil() as u16
+            // Uniform 1..=range (biased ceil/f32 path replaced)
+            self.rng.gen_range(1, i32::from(range_i) + 1) as u16
         }
     }
 
@@ -2332,29 +2357,35 @@ impl Zmachine {
 
     // EXT_1002
     fn do_log_shift(&mut self, number: u16, places: u16) -> u16 {
-        let number = number as u32;
-        let places = places as i16;
-
-        if places > 0 {
-            (number << places) as u16
-        } else if places < 0 {
-            (number >> -places) as u16
+        let p = i32::from(places as i16);
+        // Valid shift range is -15..=15; any shift that discards every bit returns 0.
+        if !(-15..=15).contains(&p) {
+            return 0;
+        }
+        let n = u32::from(number);
+        if p > 0 {
+            ((n << p) & 0xFFFF) as u16
+        } else if p < 0 {
+            // p negative, safe to negate as i32
+            (n >> (-p) as u32) as u16
         } else {
-            number as u16
+            number
         }
     }
 
     // EXT_1003
     fn do_art_shift(&mut self, number: u16, places: u16) -> u16 {
-        let mut number = (number as i16) as i32;
-        let places = places as i16;
-
-        if places > 0 {
-            number <<= places;
-        } else if places < 0 {
-            number >>= -places;
+        let p = i32::from(places as i16);
+        if !(-15..=15).contains(&p) {
+            return 0;
         }
-        (number as i16) as u16
+        let mut n = i32::from(number as i16);
+        if p > 0 {
+            n <<= p as u32;
+        } else if p < 0 {
+            n >>= (-p) as u32;
+        }
+        (n as i16) as u16
     }
 }
 
@@ -2646,10 +2677,10 @@ impl Zmachine {
         let num = self.get_object_number(input);
 
         if num == 0 {
-            self.ui.print("I can't find that room..=\n");
+            self.ui.print("I can't find that room...\n");
             return;
         } else {
-            self.ui.print("Zzzap! Somehow you are in a different place..=\n");
+            self.ui.print("Zzzap! Somehow you are in a different place...\n");
         }
 
         self.insert_obj(you, num);
@@ -2660,10 +2691,10 @@ impl Zmachine {
         let num = self.get_object_number(input);
 
         if num == 0 {
-            self.ui.print("I can't find that object..=\n");
+            self.ui.print("I can't find that object...\n");
             return;
         } else {
-            self.ui.print(&format!("Zzzing! Somehow you are holding the {}..=\n", input));
+            self.ui.print(&format!("Zzzing! Somehow you are holding the {}...\n", input));
         }
 
         self.insert_obj(num, you);

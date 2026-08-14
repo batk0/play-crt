@@ -78,7 +78,10 @@ pub fn write_slot(game_id: &str, slot: u8, quetzal_bytes: &[u8], status: &str) -
     let json_path = sidecar_path(game_id, slot);
     let json = serde_json::to_string_pretty(&side).map_err(|e| format!("json encode: {e}"))?;
     // Best-effort sidecar write; failure is not fatal for the save itself.
-    let _ = fs::write(&json_path, json);
+    // On failure remove any stale sidecar so metadata does not desync.
+    if fs::write(&json_path, &json).is_err() {
+        let _ = fs::remove_file(&json_path);
+    }
     Ok(())
 }
 

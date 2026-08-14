@@ -95,10 +95,11 @@ USAGE:
 OPTIONS:
     --story <PATH>   Path to .z3/.z5/.z8/.zip story file (also accepts positional arg)
     --curvature <F[,F]>  Barrel curvature X,Y (0.0..1.0). Single value sets both axes.
-                        Default 0.20,0.20 (visible bulge). Try 0.15,0.20 or 0.10 to disable.
-                        Examples: --curvature 0.20  --curvature 0.15,0.20  --curvature=0
+                         Default 0.20,0.20 (visible bulge). Use 0 to disable curvature
+                         (0.10 is a subtle but valid curvature, not disabled).
+                         Examples: --curvature 0.20  --curvature 0.15,0.20  --curvature=0
     --help, -h       Show this help
-    --version        Show version
+    --version, -V    Show version
 
 STORY DISCOVERY:
     If --story not given, searches:

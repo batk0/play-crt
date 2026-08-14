@@ -1212,7 +1212,12 @@ fn draw_cursor(
         ph.b.saturating_add(0x55),
     );
     canvas.set_draw_color(inner);
-    let _ = canvas.fill_rect(Rect::new(cx + 1, cy + 1, cell_w - 2, cell_h - 2));
+    let _ = canvas.fill_rect(Rect::new(
+        cx + 1,
+        cy + 1,
+        cell_w.saturating_sub(2),
+        cell_h.saturating_sub(2),
+    ));
 }
 
 // Decomposed CRT effects to keep each function <100 lines and avoid too_many_lines
@@ -1316,7 +1321,9 @@ fn draw_scanlines_with_state(
     let filt = crt_pi::filter_width(i32_to_f32(glass_h), i32_to_f32(window_h_i32()));
 
     for y in glass_y..glass_y + glass_h {
-        let weight = crt_pi::scanline_weight_for_row(y, glass_y, &params, filt);
+        // vertical_scale = output rows per texture row; 1.0 preserves legacy behaviour
+        // (texture == glass). Future callers can pass window/glass ratio if desired.
+        let weight = crt_pi::scanline_weight_for_row(y, glass_y, &params, filt, 1.0);
         // weight is bloom-scaled 0.18..1.5 — invert to darkness: gap→opaque, line→transparent
         // Keep original subtle wobble (sin) as a tiny vertical phase shift, additive to weight.
         let y_f = i32_to_f32(y);
@@ -1362,8 +1369,8 @@ fn draw_aperture_mask(
     // Two-pixel stagger: at MASK_BRIGHTNESS 0.70 the darker channels are ~30% down.
     // We approximate by drawing 1px dark lines on every second column with two
     // alternating tints that bias toward green/magenta when the eye averages.
-    for x in (glass_x..glass_x + glass_w).step_by(2) {
-        let parity = (x - glass_x) & 1;
+    for (i, x) in (glass_x..glass_x + glass_w).step_by(2).enumerate() {
+        let parity = i & 1;
         // Alternate tint subtly: even → magenta-ish (darken green), odd → green-ish.
         // Use low alpha black with tint; real shader does colour*mask, we do overlay.
         // Simpler: just draw a faint dark line every other pixel to break moire.

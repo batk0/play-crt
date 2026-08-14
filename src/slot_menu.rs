@@ -50,8 +50,8 @@ impl SlotMenuState {
     pub(crate) fn render_to_grid(&self, grid: &mut Grid) {
         grid.clear();
         let mut header = format!(" SELECT SAVE SLOT FOR {}", self.title.to_uppercase());
-        if header.len() > 78 {
-            header.truncate(78);
+        if header.chars().count() > 78 {
+            header = header.chars().take(78).collect();
         }
         grid.put_str(&format!("{header}\n"));
         grid.put_str(" ────────────────────────────────────────────────────────────────────────────────\n");
@@ -61,13 +61,13 @@ impl SlotMenuState {
             let slot_no = idx + 1;
             let line = if let Some(meta) = entry {
                 let mut status = meta.status.clone();
-                // Trim status to fit: " 1. Slot 1 [West of House - 10/0 2026-05-13]" ~ 80
-                if status.len() > 36 {
-                    status.truncate(36);
+                // Trim status to fit: " 1. Slot 1 [West of House - 10/0 2026-05-13]" ~ 80 (char-boundary safe)
+                if status.chars().count() > 36 {
+                    status = status.chars().take(36).collect();
                 }
                 let mut ts = meta.timestamp.clone();
-                if ts.len() > 16 {
-                    ts.truncate(16);
+                if ts.chars().count() > 16 {
+                    ts = ts.chars().take(16).collect();
                 }
                 format!(" {marker} {slot_no}. Slot {slot_no} [{status} {ts}]\n")
             } else {

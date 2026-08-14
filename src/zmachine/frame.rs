@@ -99,7 +99,7 @@ impl Frame {
     pub fn read_local(&self, index: u8) -> u16 {
         let index = index as usize;
 
-        if index > self.locals.len() {
+        if index >= self.locals.len() {
             panic!("Trying to read out of bounds local @: {}", index);
         }
 
@@ -109,7 +109,7 @@ impl Frame {
     pub fn write_local(&mut self, index: u8, value: u16) {
         let index = index as usize;
 
-        if index > self.locals.len() {
+        if index >= self.locals.len() {
             panic!("Trying to write out of bounds local @: {}", index);
         }
 

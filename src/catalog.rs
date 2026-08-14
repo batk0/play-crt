@@ -22,14 +22,26 @@ fn ensure_minizork_installed(sdir: &Path, entry: &ManifestEntry) -> Option<PathB
     if dest.exists() {
         return Some(dest);
     }
-    // Try embedded bytes first
-    if fs::create_dir_all(&dest_dir).is_ok() && fs::write(&dest, MINIZORK_BYTES).is_ok() {
-        return Some(dest);
-    }
-    // Fallback: look for filesystem fixture in dev tree
-    if let Some(src) = find_filesystem_minizork_fixture() {
-        if fs::create_dir_all(&dest_dir).is_ok() && fs::copy(&src, &dest).is_ok() {
+    // Try embedded bytes first — atomic via temp file + rename
+    if fs::create_dir_all(&dest_dir).is_ok() {
+        let tmp = dest_dir.join(format!(".{}.tmp", entry.filename));
+        if fs::write(&tmp, MINIZORK_BYTES).is_ok() && fs::rename(&tmp, &dest).is_ok() {
             return Some(dest);
+        }
+        let _ = fs::remove_file(&tmp);
+    }
+    // Fallback: look for filesystem fixture in dev tree — also atomic
+    if let Some(src) = find_filesystem_minizork_fixture() {
+        if fs::create_dir_all(&dest_dir).is_ok() {
+            let tmp = dest_dir.join(format!(".{}.tmp", entry.filename));
+            if fs::copy(&src, &tmp).is_ok() && fs::rename(&tmp, &dest).is_ok() {
+                return Some(dest);
+            }
+            let _ = fs::remove_file(&tmp);
+            // Last resort: direct copy if tmp/rename fails (e.g., cross-device fallback)
+            if fs::copy(&src, &dest).is_ok() {
+                return Some(dest);
+            }
         }
     }
     None

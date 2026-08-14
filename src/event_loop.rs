@@ -23,6 +23,8 @@ pub fn run_event_loop(
     event_pump: &mut sdl2::EventPump,
 ) -> Result<(), String> {
     video.text_input().start();
+    // Initial title sync — neutral or reflecting the pre-launched game
+    sync_window_title(canvas, state);
 
     let mut running = true;
     while running {
@@ -32,6 +34,8 @@ pub fn run_event_loop(
         }
 
         poll_session(state);
+        // Keep window title in sync with active game / menu
+        sync_window_title(canvas, state);
 
         update_blink(state);
 
@@ -149,6 +153,19 @@ pub(crate) fn update_blink(state: &mut AppState) {
         state.blink_on = !state.blink_on;
         state.last_blink = Instant::now();
     }
+}
+
+fn sync_window_title(canvas: &mut sdl2::render::Canvas<sdl2::video::Window>, state: &AppState) {
+    // Derive a human-readable game title when a backend is active.
+    let title_opt = if state.backend.is_some() {
+        state
+            .story_path
+            .as_ref()
+            .and_then(|p| p.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()))
+    } else {
+        None
+    };
+    crate::sdl_setup::update_window_title(canvas, title_opt.as_deref());
 }
 
 pub(crate) fn render_frame(

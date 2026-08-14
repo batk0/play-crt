@@ -347,9 +347,9 @@ impl MenuState {
             };
             let num = idx + 1;
             let mut title = entry.title.clone();
-            // Truncate to fit 80 cols: " > 1. Title [Ready]" → keep title ~44
-            if title.len() > 44 {
-                title.truncate(44);
+            // Truncate to fit 80 cols: " > 1. Title [Ready]" → keep title ~44 (char-boundary safe)
+            if title.chars().count() > 44 {
+                title = title.chars().take(44).collect();
             }
             let line = format!(" {marker} {num}. {title} {state}\n");
             grid.put_str(&line);
@@ -365,8 +365,8 @@ impl MenuState {
             grid.put_str(&format!(" Downloading {dl} ... please wait\n"));
         } else if let Some(msg) = &self.status_msg {
             let mut m = msg.clone();
-            if m.len() > 78 {
-                m.truncate(78);
+            if m.chars().count() > 78 {
+                m = m.chars().take(78).collect();
             }
             grid.put_str(&format!(" {m}\n"));
         }

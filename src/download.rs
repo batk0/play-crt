@@ -22,16 +22,15 @@ fn try_install_bundled_minizork(entry: &GameEntry, final_path: &Path) -> Option<
     if entry.id != "minizork" {
         return None;
     }
-    // Optional sha256 verification against manifest if provided
+    // Enforce sha256 verification against manifest if provided — return error on mismatch
     if let Some(expected_hex) = &entry.sha256 {
         let mut hasher = Sha256::new();
         hasher.update(MINIZORK_BYTES);
         let got = hex::encode(hasher.finalize());
-        if !got.eq_ignore_ascii_case(expected_hex) && std::env::var("DEBUG").is_ok() {
-            // Log mismatch but still install — the embedded fixture is authoritative
-            eprintln!(
-                "bundled minizork sha256 mismatch: expected {expected_hex}, got {got} — installing anyway"
-            );
+        if !got.eq_ignore_ascii_case(expected_hex) {
+            return Some(Err(format!(
+                "bundled minizork sha256 mismatch: expected {expected_hex}, got {got}"
+            )));
         }
     }
     // Ensure parent exists (caller already does, but be defensive)
@@ -39,11 +38,23 @@ fn try_install_bundled_minizork(entry: &GameEntry, final_path: &Path) -> Option<
         if let Err(e) = fs::create_dir_all(parent) {
             return Some(Err(format!("create {} for fallback: {e}", parent.display())));
         }
+        // Atomic write via temp file + rename in destination directory
+        let tmp = parent.join(format!(".{}.tmp", entry.filename));
+        match fs::write(&tmp, MINIZORK_BYTES) {
+            Ok(()) => match fs::rename(&tmp, final_path) {
+                Ok(()) => return Some(Ok(final_path.to_path_buf())),
+                Err(e) => {
+                    let _ = fs::remove_file(&tmp);
+                    return Some(Err(format!("bundled minizork fallback rename failed: {e}")));
+                }
+            },
+            Err(e) => {
+                let _ = fs::remove_file(&tmp);
+                return Some(Err(format!("bundled minizork fallback write failed: {e}")));
+            }
+        }
     }
-    match fs::write(final_path, MINIZORK_BYTES) {
-        Ok(()) => Some(Ok(final_path.to_path_buf())),
-        Err(e) => Some(Err(format!("bundled minizork fallback write failed: {e}"))),
-    }
+    Some(Err("bundled minizork fallback: no parent".to_string()))
 }
 
 /// Search for a filesystem copy of the bundled minizork fixture (dev layout).

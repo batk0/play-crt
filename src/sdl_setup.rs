@@ -29,7 +29,7 @@ pub fn create_window(
     }
     let window = video
         .window(
-            "ZORK I — CRT  •  80×24  •  VT323 phosphor (crt-pi)",
+            "PLAY-CRT  •  80×24  •  VT323 phosphor (crt-pi)",
             WINDOW_W,
             WINDOW_H,
         )
@@ -44,6 +44,20 @@ pub fn create_window(
         .build()
         .map_err(|e| e.to_string())?;
     Ok(canvas)
+}
+
+/// Update the window title to reflect the active game.
+/// Call after launching a game: e.g. `update_window_title(&mut canvas, Some("Mini-Zork"))`.
+/// Passing `None` resets to the neutral `"PLAY-CRT"` title.
+pub fn update_window_title(
+    canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+    game_title: Option<&str>,
+) {
+    let title = match game_title {
+        Some(name) if !name.trim().is_empty() => format!("PLAY-CRT — {}", name.trim()),
+        _ => "PLAY-CRT".to_string(),
+    };
+    let _ = canvas.window_mut().set_title(&title);
 }
 
 pub fn setup_font_and_metrics(

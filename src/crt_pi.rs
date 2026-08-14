@@ -112,18 +112,37 @@ pub fn calc_scanline(dy: f32, filter_width: f32, params: &CrtPiParams) -> f32 {
 /// Mirrors the fragment shader's `dy = texcoordInPixels.y - (floor(y)+0.5)` logic
 /// but applied to whole rows for SDL line drawing. `texture_size_y` ≈ glass_h,
 /// `output_size_y` ≈ window_h for filter width.
+/// `vertical_scale` is the number of output rows per texture row (OutputSize.y / TextureSize.y);
+/// 1.0 preserves the original behaviour where `TextureSize.y == glass_h`.
 #[must_use]
-pub fn scanline_weight_for_row(y: i32, glass_y: i32, params: &CrtPiParams, filter_width: f32) -> f32 {
-    // Emulate `texcoordInPixels.y = (y - glass_y) / glass_h * TextureSize.y`
-    // which simplifies to `y - glass_y + 0.5` offset per row when TextureSize==glass_h.
-    // Use fractional distance to nearest scanline center.
-    let fy = crate::constants::i32_to_f32(y - glass_y) + 0.5;
+pub fn scanline_weight_for_row(
+    y: i32,
+    glass_y: i32,
+    params: &CrtPiParams,
+    filter_width: f32,
+    vertical_scale: f32,
+) -> f32 {
+    // Emulate `texcoordInPixels.y = (y - glass_y) / vertical_scale + 0.5`.
+    // When TextureSize == glass_h, vertical_scale == 1.0 and this collapses to `y - glass_y + 0.5`.
+    let scale = if vertical_scale <= 0.0 || !vertical_scale.is_finite() {
+        1.0
+    } else {
+        vertical_scale
+    };
+    let fy = crate::constants::i32_to_f32(y - glass_y) / scale + 0.5;
     let temp_y = fy.floor() + 0.5;
     let dy = fy - temp_y;
     let mut w = calc_scanline(dy, filter_width, params);
     w *= params.bloom_factor;
     // Clamp to shader's implicit range after bloom (gap is already floor).
     w.clamp(params.scanline_gap * params.bloom_factor, params.bloom_factor)
+}
+
+/// Backward-compatible wrapper preserving existing call sites (scale = 1.0).
+#[allow(dead_code)]
+#[must_use]
+pub fn scanline_weight_for_row_compat(y: i32, glass_y: i32, params: &CrtPiParams, filter_width: f32) -> f32 {
+    scanline_weight_for_row(y, glass_y, params, filter_width, 1.0)
 }
 
 /// Compute crt-pi's `filterWidth = (InputSize.y / OutputSize.y) / 3`.
