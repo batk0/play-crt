@@ -510,7 +510,9 @@ pub fn find_story(cli_arg: Option<String>) -> Option<PathBuf> {
                 }
             }
         }
-        eprintln!("story file not found: {p}");
+        if std::env::var("DEBUG").is_ok() {
+            eprintln!("story file not found: {p}");
+        }
         return None;
     }
     // 1) New data_dir/stories/**/*.{z3,z5,z8,zip} — preferred location

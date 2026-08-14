@@ -47,7 +47,9 @@ pub fn basic_manifest_path() -> Option<PathBuf> {
 #[must_use]
 pub fn load_manifest() -> Vec<BasicManifestEntry> {
     let Some(path) = basic_manifest_path() else {
-        eprintln!("basic_catalog: no bundled manifest found (looked in assets/manifests/basic.json)");
+        if std::env::var("DEBUG").is_ok() {
+            eprintln!("basic_catalog: no bundled manifest found (looked in assets/manifests/basic.json)");
+        }
         return Vec::new();
     };
     load_manifest_from(&path)
@@ -55,13 +57,17 @@ pub fn load_manifest() -> Vec<BasicManifestEntry> {
 
 fn load_manifest_from(path: &Path) -> Vec<BasicManifestEntry> {
     let Ok(text) = fs::read_to_string(path) else {
-        eprintln!("basic_catalog: failed to read {}", path.display());
+        if std::env::var("DEBUG").is_ok() {
+            eprintln!("basic_catalog: failed to read {}", path.display());
+        }
         return Vec::new();
     };
     match serde_json::from_str::<Vec<BasicManifestEntry>>(&text) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("basic_catalog: failed to parse {}: {e}", path.display());
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("basic_catalog: failed to parse {}: {e}", path.display());
+            }
             Vec::new()
         }
     }

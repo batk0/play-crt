@@ -224,7 +224,9 @@ mod tests {
         let sess = match BasicSession::new("test_hello".to_string(), script.clone()) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("skip basic spawn test: {e}");
+                if std::env::var("DEBUG").is_ok() {
+                    eprintln!("skip basic spawn test: {e}");
+                }
                 let _ = fs::remove_file(&script);
                 return;
             }
@@ -258,7 +260,9 @@ mod tests {
         let sess = match BasicSession::new("test_echo".to_string(), script.clone()) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("skip basic input test: {e}");
+                if std::env::var("DEBUG").is_ok() {
+                    eprintln!("skip basic input test: {e}");
+                }
                 let _ = fs::remove_file(&script);
                 return;
             }
@@ -301,7 +305,9 @@ mod tests {
         let sess = match BasicSession::new("test_prompt".to_string(), script.clone()) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("skip prompt test: {e}");
+                if std::env::var("DEBUG").is_ok() {
+                    eprintln!("skip prompt test: {e}");
+                }
                 let _ = fs::remove_file(&script);
                 return;
             }

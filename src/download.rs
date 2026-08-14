@@ -27,7 +27,7 @@ fn try_install_bundled_minizork(entry: &GameEntry, final_path: &Path) -> Option<
         let mut hasher = Sha256::new();
         hasher.update(MINIZORK_BYTES);
         let got = hex::encode(hasher.finalize());
-        if !got.eq_ignore_ascii_case(expected_hex) {
+        if !got.eq_ignore_ascii_case(expected_hex) && std::env::var("DEBUG").is_ok() {
             // Log mismatch but still install — the embedded fixture is authoritative
             eprintln!(
                 "bundled minizork sha256 mismatch: expected {expected_hex}, got {got} — installing anyway"
@@ -222,7 +222,9 @@ where
                     match fb {
                         Ok(p) => {
                             progress(100);
-                            eprintln!("download failed for minizork ({e}) — installed bundled fixture to {}", p.display());
+                            if std::env::var("DEBUG").is_ok() {
+                                eprintln!("download failed for minizork ({e}) — installed bundled fixture to {}", p.display());
+                            }
                             return Ok(p);
                         }
                         Err(fe) => {
@@ -235,11 +237,13 @@ where
                     match fs::copy(&fs_path, &final_path) {
                         Ok(_) => {
                             progress(100);
-                            eprintln!(
-                                "download failed for minizork ({e}) — copied filesystem fixture {} to {}",
-                                fs_path.display(),
-                                final_path.display()
-                            );
+                            if std::env::var("DEBUG").is_ok() {
+                                eprintln!(
+                                    "download failed for minizork ({e}) — copied filesystem fixture {} to {}",
+                                    fs_path.display(),
+                                    final_path.display()
+                                );
+                            }
                             return Ok(final_path);
                         }
                         Err(fe) => {

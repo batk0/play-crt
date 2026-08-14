@@ -89,10 +89,12 @@ impl CrtGl {
             set_uniform_f32(&gl, program, "INPUT_GAMMA", p.input_gamma);
             set_uniform_f32(&gl, program, "OUTPUT_GAMMA", p.output_gamma);
             // Log which uniforms the GL path will actually use — helps verify CURVATURE isn't zeroed.
-            eprintln!(
-                "crt-pi GL uniforms: CURVATURE {} / {} (CURVATURE enabled in crt-pi.frag)",
-                p.curvature_x, p.curvature_y
-            );
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!(
+                    "crt-pi GL uniforms: CURVATURE {} / {} (CURVATURE enabled in crt-pi.frag)",
+                    p.curvature_x, p.curvature_y
+                );
+            }
             gl.use_program(None);
         }
 

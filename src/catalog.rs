@@ -97,7 +97,9 @@ pub fn stories_manifest_path() -> Option<PathBuf> {
 /// Load the bundled manifest. Returns empty vec if missing (offline dev).
 pub fn load_manifest() -> Vec<ManifestEntry> {
     let Some(path) = stories_manifest_path() else {
-        eprintln!("catalog: no bundled manifest found (looked in assets/manifests/stories.json)");
+        if std::env::var("DEBUG").is_ok() {
+            eprintln!("catalog: no bundled manifest found (looked in assets/manifests/stories.json)");
+        }
         return Vec::new();
     };
     load_manifest_from(&path)
@@ -105,13 +107,17 @@ pub fn load_manifest() -> Vec<ManifestEntry> {
 
 fn load_manifest_from(path: &Path) -> Vec<ManifestEntry> {
     let Ok(text) = fs::read_to_string(path) else {
-        eprintln!("catalog: failed to read {}", path.display());
+        if std::env::var("DEBUG").is_ok() {
+            eprintln!("catalog: failed to read {}", path.display());
+        }
         return Vec::new();
     };
     match serde_json::from_str::<Vec<ManifestEntry>>(&text) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("catalog: failed to parse {}: {e}", path.display());
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("catalog: failed to parse {}: {e}", path.display());
+            }
             Vec::new()
         }
     }
