@@ -41,12 +41,12 @@ cargo build --release
 - Either install SDL2 + SDL2_ttf dev libs, or build with bundled SDL2:
 
 ```bash
-# edit Cargo.toml: sdl2 = { version="0.38", features=["bundled","ttf"] }
+# edit Cargo.toml: sdl2 = { version = "0.38", features = ["bundled", "ttf"] }
 cargo build --release
 .\target\release\play-crt.exe
 ```
 
-Windows exe with `bundled-sdl2` needs no separate SDL2 install.
+Windows exe with `bundled` needs no separate SDL2 install.
 
 ---
 
@@ -71,7 +71,7 @@ PLAY-CRT stores everything under the OS data dir (override with `PLAY_CRT_DATA_D
 
 - **macOS:** `~/Library/Application Support/play-crt`
 - **Linux:** `~/.local/share/play-crt`
-- **Windows:** `%APPDATA%\play-crt` (`%LOCALAPPDATA%` via `directories` crate)
+- **Windows:** `%APPDATA%\play-crt` (Roaming, via `ProjectDirs::data_local_dir`)
 
 ```
 play-crt/
@@ -118,6 +118,6 @@ In-game (`Z-machine`): type + `Enter` to send, `Backspace` to edit, `Up`/`Down` 
 ## License
 
 - **Code** — MIT (see `LICENSE`). `src/zmachine/*` is vendored from [encrusted](https://github.com/demille/encrusted) (MIT). `src/crt_pi.rs` (Rust port of crt-pi math) is MIT.
-- **crt-pi shader** — `assets/shaders/crt-pi.glsl` (and `.vert`/`.frag` split) is **GPL-2.0+**, © 2015-2016 davej, from [libretro/glsl-shaders](https://github.com/libretro/glsl-shaders). See `assets/shaders/LICENSE.crt-pi`. Redistribution of the `.glsl` verbatim must comply with GPL-2.0+.
+- **crt-pi shader** — `assets/shaders/crt-pi.vert` and `assets/shaders/crt-pi.frag` (derived from `crt-pi.glsl`, GPL-2.0+, © 2015-2016 davej, from [libretro/glsl-shaders](https://github.com/libretro/glsl-shaders)) are **GPL-2.0+**. See `assets/shaders/LICENSE.crt-pi`. Redistribution of the `.vert`/`.frag` verbatim must comply with GPL-2.0+.
 - **VT323 font** — SIL Open Font License 1.1 (`assets/fonts/OFL.txt`).
 - **Game stories** — not bundled; Infocom titles remain © Infocom. BASIC games are Unlicense (see manifests). Use only content you have rights to.

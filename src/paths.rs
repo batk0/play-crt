@@ -19,7 +19,7 @@ pub(crate) static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 /// 2. Portable mode — if an empty file `portable` or `.portable` sits next
 ///    to the executable, or `$PLAY_CRT_PORTABLE` is set, use `exe_dir/data`.
 /// 3. `ProjectDirs::data_local_dir()` — `~/Library/Application Support/...` on
-///    macOS, `~/.local/share/...` on Linux, `%LOCALAPPDATA%` on Windows.
+///    macOS, `~/.local/share/...` on Linux, `%APPDATA%` (Roaming) on Windows.
 /// 4. `exe_dir/data` fallback.
 /// 5. `./data` as last resort.
 #[must_use]
