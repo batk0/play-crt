@@ -10,6 +10,7 @@ use sdl2::keyboard::Keycode;
 
 use crate::backend::{Backend, ZMachineSession};
 use crate::basic::BasicSession;
+use crate::config;
 use crate::controls::ControlState;
 use crate::grid::Grid;
 use crate::menu::{CatalogKind, GameKind, MenuEntry, MenuState};
@@ -51,7 +52,7 @@ impl AppState {
             blink_on: true,
             last_blink: Instant::now(),
             start_time: Instant::now(),
-            control_state: ControlState::default(),
+            control_state: config::load_control_state(),
             mouse_pos: None,
             menu: None,
             slot_menu: None,
@@ -74,7 +75,7 @@ impl AppState {
             blink_on: true,
             last_blink: Instant::now(),
             start_time: Instant::now(),
-            control_state: ControlState::default(),
+            control_state: config::load_control_state(),
             mouse_pos: None,
             menu: None,
             slot_menu: None,
@@ -93,7 +94,7 @@ impl AppState {
             blink_on: true,
             last_blink: Instant::now(),
             start_time: Instant::now(),
-            control_state: ControlState::default(),
+            control_state: config::load_control_state(),
             mouse_pos: None,
             menu: Some(menu),
             slot_menu: None,
@@ -272,8 +273,16 @@ impl AppState {
                 }
             }
             Keycode::Left | Keycode::Right | Keycode::H | Keycode::L => {
-                if let Some(menu) = self.menu.as_mut() {
-                    menu.toggle_kind();
+                let new_kind = {
+                    if let Some(menu) = self.menu.as_mut() {
+                        menu.toggle_kind();
+                        Some(menu.kind)
+                    } else {
+                        None
+                    }
+                };
+                if let Some(k) = new_kind {
+                    let _ = config::save_last_catalog(k);
                 }
                 if let Some(m) = &self.menu {
                     m.render_to_grid(&mut self.grid);
@@ -409,8 +418,16 @@ impl AppState {
             return;
         }
         if t == "h" || t == "l" {
-            if let Some(menu) = self.menu.as_mut() {
-                menu.toggle_kind();
+            let new_kind = {
+                if let Some(menu) = self.menu.as_mut() {
+                    menu.toggle_kind();
+                    Some(menu.kind)
+                } else {
+                    None
+                }
+            };
+            if let Some(k) = new_kind {
+                let _ = config::save_last_catalog(k);
             }
             if let Some(m) = &self.menu {
                 m.render_to_grid(&mut self.grid);

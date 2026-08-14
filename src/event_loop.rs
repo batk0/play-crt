@@ -5,6 +5,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
 use crate::app::AppState;
+use crate::config;
 use crate::constants::{f32_to_u8_clamped, u32_to_i32, usize_to_i32};
 use crate::controls;
 use crate::render::{
@@ -73,7 +74,7 @@ pub(crate) fn pump_events(
                 }
                 Event::MouseButtonDown { x, y, mouse_btn: sdl2::mouse::MouseButton::Left, .. } => {
                     if controls::handle_click(&mut state.control_state, x, y) {
-                        // bezel controls still work in menu
+                        let _ = config::save_control_state(&state.control_state);
                     }
                 }
                 Event::MouseMotion { x, y, .. } => {
@@ -110,7 +111,7 @@ pub(crate) fn pump_events(
             Event::TextInput { text, .. } => state.handle_text_input(&text),
             Event::MouseButtonDown { x, y, mouse_btn: sdl2::mouse::MouseButton::Left, .. } => {
                 if controls::handle_click(&mut state.control_state, x, y) {
-                    // handled — no further action
+                    let _ = config::save_control_state(&state.control_state);
                 }
             }
             Event::MouseMotion { x, y, .. } => {

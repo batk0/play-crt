@@ -91,6 +91,28 @@ impl PhosphorColor {
         }
     }
 
+    /// String used in `config.json` (`Green`/`Amber`/`White`).
+    #[must_use]
+    pub const fn as_config_str(self) -> &'static str {
+        match self {
+            Self::Green => "Green",
+            Self::Amber => "Amber",
+            Self::White => "White",
+        }
+    }
+
+    /// Parse `config.json` phosphor string (case-insensitive, defaults to Green).
+    #[must_use]
+    pub fn from_config_str(s: &str) -> Self {
+        if s.eq_ignore_ascii_case("amber") {
+            Self::Amber
+        } else if s.eq_ignore_ascii_case("white") {
+            Self::White
+        } else {
+            Self::Green
+        }
+    }
+
     #[must_use]
     #[allow(dead_code)]
     pub const fn short_label(self) -> &'static str {

@@ -7,6 +7,7 @@ mod basic;
 mod basic_catalog;
 mod catalog;
 mod cli;
+mod config;
 mod constants;
 mod controls;
 mod crt_gl;
@@ -126,8 +127,9 @@ fn main() -> Result<(), String> {
         st.grid.put_str("\n !! story file not found\n");
         st
     } else {
-        // No --story → always show pure-text menu in the CRT grid (Z-MACHINE first)
-        let menu = MenuState::new_for_kind(menu::CatalogKind::ZMachine);
+        // No --story → show pure-text menu, restoring last catalog kind if persisted
+        let initial_kind = config::load_last_catalog().unwrap_or(menu::CatalogKind::ZMachine);
+        let menu = MenuState::new_for_kind(initial_kind);
         let st = AppState::new_with_menu(menu);
         let _ = font_path;
         let _ = pt;
