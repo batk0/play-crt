@@ -115,8 +115,25 @@ In-game (`Z-machine`): type + `Enter` to send, `Backspace` to edit, `Up`/`Down` 
 
 ---
 
+## Attributions
+
+All third-party works are fetched or vendored with their original licenses. Nothing is bundled beyond the manifests — stories and BASIC games download on demand.
+
+| Component | Source | Author / License |
+|-----------|--------|------------------|
+| **Zork I/II/III, Planetfall, Mini-Zork** | [historicalsource/zork1](https://github.com/historicalsource/zork1) · [zork2](https://github.com/historicalsource/zork2) · [zork3](https://github.com/historicalsource/zork3) · [planetfall](https://github.com/historicalsource/planetfall) · [minizork-1987](https://github.com/historicalsource/minizork-1987) · mirrored at [IfArchive](https://ifarchive.org) | Original © 1980–1982 [Infocom, Inc.](https://en.wikipedia.org/wiki/Infocom) — distributed by [historicalsource](https://github.com/historicalsource) for non-commercial preservation. Not bundled; downloaded via `assets/manifests/stories.json` (`© Infocom — historical source, non-commercial`). |
+| **BASIC Computer Games** (95 Python ports) | [coding-horror/basic-computer-games](https://github.com/coding-horror/basic-computer-games) | Book by [David Ahl](https://en.wikipedia.org/wiki/BASIC_Computer_Games) (1973/1978); modern Python ports by Jeff Atwood and [contributors](https://github.com/coding-horror/basic-computer-games/graphs/contributors) (~13k★). [Unlicense](https://unlicense.org) (public-domain dedication). Fetched via `assets/manifests/basic.json`. |
+| **Z-machine** (`src/zmachine/`) | [DeMille/encrusted](https://github.com/DeMille/encrusted) (crate `encrusted` 1.1) | By Sterling DeMille — [MIT](https://github.com/DeMille/encrusted/blob/master/LICENSE) (© 2018). Vendored and extended (Quetzal, `.zip`, 80×24). |
+| **CRT shader** (`assets/shaders/crt-lottes.*`) | [libretro/glsl-shaders — crt-lottes.glsl](https://github.com/libretro/glsl-shaders/blob/master/crt/shaders/crt-lottes.glsl) ([raw](https://raw.githubusercontent.com/libretro/glsl-shaders/master/crt/shaders/crt-lottes.glsl)) | *crt-lottes* by [Timothy Lottes](https://timothylottes.github.io/) — **PUBLIC DOMAIN** (“Please take and use, change, or whatever.” — see `assets/shaders/LICENSE` and header in `crt-lottes.glsl` / `.vert` / `.frag`). GL 3.3 split is a mechanical port. |
+| **Font VT323** (`assets/fonts/VT323-Regular.ttf`) | [Google Fonts — VT323](https://fonts.google.com/specimen/VT323) | By Peter Hull (peter.hull@oikoi.com) — [SIL OFL 1.1](http://scripts.sil.org/OFL) (`assets/fonts/OFL.txt`). |
+| **SDL2 + Rust bindings** | [libsdl.org](https://libsdl.org) · [Rust-SDL2/rust-sdl2](https://github.com/Rust-SDL2/rust-sdl2) · [glow](https://github.com/grovesNL/glow) | SDL2 is zlib-licensed; `rust-sdl2` is MIT, `glow` is MIT/Apache-2.0, `sdl2_ttf` via SDL_ttf. CPU fallback `src/crt_pi.rs` is clean-room MIT © 2026 batk0 (not derived from crt-lottes). |
+
+> If you redistribute PLAY-CRT, keep the license files in `assets/shaders/LICENSE` and `assets/fonts/OFL.txt` and respect the Infocom non-commercial preservation terms.
+
+---
+
 ## License
 
-- **Code** — MIT (see `LICENSE`). `src/zmachine/*` is vendored from [encrusted](https://github.com/demille/encrusted) (MIT). CRT shader is **PUBLIC DOMAIN** — `assets/shaders/crt-lottes.glsl` / `crt-lottes.vert` / `crt-lottes.frag` are "PUBLIC DOMAIN CRT STYLED SCAN-LINE SHADER by Timothy Lottes" (see `assets/shaders/LICENSE` and shader headers, original at https://raw.githubusercontent.com/libretro/glsl-shaders/master/crt/shaders/crt-lottes.glsl). CPU fallback (`src/crt_pi.rs` + SDL2 path) remains MIT (© 2026 batk0, clean-room).
+- **Code** — MIT (see `LICENSE`, © 2026 batk0). `src/zmachine/*` remains MIT (encrusted). `src/crt_pi.rs` + SDL2 fallback is MIT. CRT shader files are PUBLIC DOMAIN (see above).
 - **VT323 font** — SIL Open Font License 1.1 (`assets/fonts/OFL.txt`).
-- **Game stories** — not bundled; Infocom titles remain © Infocom. BASIC games are Unlicense (see manifests). Use only content you have rights to.
+- **Game content** — not bundled. Infocom titles © Infocom (non-commercial preservation only); BASIC games Unlicense. Use only content you have rights to.
