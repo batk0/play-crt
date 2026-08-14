@@ -3,855 +3,855 @@
     "id": "23_matches",
     "title": "23 Matches",
     "filename": "23matches.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/93_23_Matches/python/23matches.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/93_23_Matches/python/23matches.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "550755ba8c0e6ea2130a6cb7083de02586dccae7dc85f2b69653c7ad5b786577",
+    "size": 2917
   },
   {
     "id": "3_d_plot",
     "title": "3-D Plot",
     "filename": "3dplot.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/87_3-D_Plot/python/3dplot.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/87_3-D_Plot/python/3dplot.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "40f4d527019c411e1eb4c16b70bf1b8598e982f9cd1979d37a690f902d834803",
+    "size": 773
   },
   {
     "id": "3_d_tic_tac_toe",
     "title": "3-D Tic-Tac-Toe",
     "filename": "qubit.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/88_3-D_Tic-Tac-Toe/python/qubit.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/88_3-D_Tic-Tac-Toe/python/qubit.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "acb4b7b14475c8465415e1b637a827326567509b15d03ab76ed4627b63500f4c",
+    "size": 12321
   },
   {
     "id": "acey_ducey",
     "title": "Acey Ducey",
     "filename": "acey_ducey.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/01_Acey_Ducey/python/acey_ducey.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/01_Acey_Ducey/python/acey_ducey.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "ecf8d24f10dd728d8c05c90610bd2ad0c93fee7024a59d95d5e88c0d1fa78a1f",
+    "size": 2506
   },
   {
     "id": "amazing",
     "title": "Amazing",
     "filename": "amazing.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/02_Amazing/python/amazing.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/02_Amazing/python/amazing.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "a288ca84a1cd57ac406e5649f6af24d06487b897b7fee5cc426ee68e49f4f593",
+    "size": 5576
   },
   {
     "id": "animal",
     "title": "Animal",
     "filename": "animal.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/03_Animal/python/animal.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/03_Animal/python/animal.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "d34640476c90dc1b6c36a8a9f2a00d82e813af53aac3421fb93b215ca23c45af",
+    "size": 7182
   },
   {
     "id": "awari",
     "title": "Awari",
     "filename": "awari.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/04_Awari/python/awari.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/04_Awari/python/awari.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "f87f825430a5258bf0addf1b5c846734309416ff38069882f7ffff9d8eb9d983",
+    "size": 11655
   },
   {
     "id": "bagels",
     "title": "Bagels",
     "filename": "bagels.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/05_Bagels/python/bagels.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/05_Bagels/python/bagels.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "d982b2ce8585ae7fb63b9f40a45f364f608b121d8130b7aaee42cf98f874bcc8",
+    "size": 5494
   },
   {
     "id": "banner",
     "title": "Banner",
     "filename": "banner.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/06_Banner/python/banner.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/06_Banner/python/banner.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "b4148832e884097900a42ed8db5c95e6d25c44a671e01568f7af87d03ccfdbd2",
+    "size": 4058
   },
   {
     "id": "basketball",
     "title": "Basketball",
     "filename": "basketball.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/07_Basketball/python/basketball.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/07_Basketball/python/basketball.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "e95224d358cfc642f8637e51f1d6d3e1cf9d56176c0d41492c300a83a4a966b9",
+    "size": 13915
   },
   {
     "id": "batnum",
     "title": "Batnum",
     "filename": "batnum.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/08_Batnum/python/batnum.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/08_Batnum/python/batnum.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "e0d607fa768c8c17235ec72011a5be2bd12759b1d5cf6dad4aa4f9acf5bf475b",
+    "size": 7948
   },
   {
     "id": "battle",
     "title": "Battle",
     "filename": "battle.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/09_Battle/python/battle.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/09_Battle/python/battle.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "77841c63ed5c47b5c097f9c49e4bbe17901b9546b5512dc50c8299b4f9432827",
+    "size": 4796
   },
   {
     "id": "blackjack",
     "title": "Blackjack",
     "filename": "blackjack.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/10_Blackjack/python/blackjack.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/10_Blackjack/python/blackjack.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "9de3167fd5be35a6f26742ef76b81f1ad522bc3f94102f0df7e52b16ff5e10f2",
+    "size": 14541
   },
   {
     "id": "bombardment",
     "title": "Bombardment",
     "filename": "bombardment.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/11_Bombardment/python/bombardment.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/11_Bombardment/python/bombardment.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "a17c4b9fe31765578b89f9b93a4d211ed8acbc47f87200786dfbecc5189253e3",
+    "size": 4801
   },
   {
     "id": "bombs_away",
     "title": "Bombs Away",
     "filename": "bombs_away.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/12_Bombs_Away/python/bombs_away.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/12_Bombs_Away/python/bombs_away.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "8f9b2b06ed45402e31af5e2aedf52294629fd7ecf86574376fd77c06e663b655",
+    "size": 5701
   },
   {
     "id": "bounce",
     "title": "Bounce",
     "filename": "bounce.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/13_Bounce/python/bounce.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/13_Bounce/python/bounce.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "7415bbc56459ee33077c4bcca8d2845d0e5241d350a308fd04dfd3bf40af46e1",
+    "size": 2921
   },
   {
     "id": "bowling",
     "title": "Bowling",
     "filename": "bowling.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/14_Bowling/python/bowling.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/14_Bowling/python/bowling.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "56aa64d7813417003bb3af7b6221259d75007569daab825ab53ab719691a06ab",
+    "size": 4926
   },
   {
     "id": "boxing",
     "title": "Boxing",
     "filename": "boxing.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/15_Boxing/python/boxing.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/15_Boxing/python/boxing.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "ab8d39549fe8a6da7bbea916130377db8bee89801b775b893a3f597a1d3e27bd",
+    "size": 5468
   },
   {
     "id": "bug",
     "title": "Bug",
     "filename": "bug.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/16_Bug/python/bug.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/16_Bug/python/bug.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "169a1ed055d5f450e49a7c5f42c84374b6e02b2188062b68b8e7f1b22ea16c82",
+    "size": 6547
   },
   {
     "id": "bullfight",
     "title": "Bullfight",
     "filename": "bullfight.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/17_Bullfight/python/bullfight.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/17_Bullfight/python/bullfight.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "21e4f782f0e368634cfbeed2425c9a116050d9e02471a4637526a3a56c088c89",
+    "size": 10266
   },
   {
     "id": "bullseye",
     "title": "Bullseye",
     "filename": "bullseye.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/18_Bullseye/python/bullseye.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/18_Bullseye/python/bullseye.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "009772c488e57eeef6cf8500311ab126bd36afe7c60879c263ae9a39454687f1",
+    "size": 3387
   },
   {
     "id": "bunny",
     "title": "Bunny",
     "filename": "bunny.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/19_Bunny/python/bunny.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/19_Bunny/python/bunny.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "2bc3484cbf1332025af8839e70fe29a4ed81a2a23913fb2621f49231a3cd4bd9",
+    "size": 2137
   },
   {
     "id": "buzzword",
     "title": "Buzzword",
     "filename": "buzzword.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/20_Buzzword/python/buzzword.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/20_Buzzword/python/buzzword.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "1d40a1636e30b5c7004963cba0b6ee92cc53f1b95a11291f31ed9b2202915513",
+    "size": 4272
   },
   {
     "id": "calendar",
     "title": "Calendar",
     "filename": "calendar.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/21_Calendar/python/calendar.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/21_Calendar/python/calendar.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "6002d331925990f377a736724ea336446d5854f7cdc7e29b1b62721f45755bd8",
+    "size": 3824
   },
   {
     "id": "change",
     "title": "Change",
     "filename": "change.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/22_Change/python/change.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/22_Change/python/change.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "c7d08c21247c2904ece67dfc3680d71bf0367c861b07ca2853f0b8bc0996ad1f",
+    "size": 2199
   },
   {
     "id": "checkers",
     "title": "Checkers",
     "filename": "checkers.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/23_Checkers/python/checkers.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/23_Checkers/python/checkers.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "b240cc3c41fe1e75ed8af21d138ac830a43f6e4b67216032e4194fa047b343a5",
+    "size": 13535
   },
   {
     "id": "chemist",
     "title": "Chemist",
     "filename": "chemist.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/24_Chemist/python/chemist.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/24_Chemist/python/chemist.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "f79db9efe2a2c1d30473f0c2c547c7b161688937d0929193b4403a89a368b909",
+    "size": 1768
   },
   {
     "id": "chief",
     "title": "Chief",
     "filename": "chief.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/25_Chief/python/chief.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/25_Chief/python/chief.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "ffbe1ed4c603116f6589f9fed7fee5c272aa4b088898a652c47481140e7c707d",
+    "size": 2638
   },
   {
     "id": "chomp",
     "title": "Chomp",
     "filename": "chomp.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/26_Chomp/python/chomp.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/26_Chomp/python/chomp.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "5d6f43afd3952ee22be0d7bf313129919d8cf00ceb2b3edb0597d0999fb757a3",
+    "size": 4519
   },
   {
     "id": "civil_war",
     "title": "Civil War",
     "filename": "Civilwar.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/27_Civil_War/python/Civilwar.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/27_Civil_War/python/Civilwar.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "745243e296885f2083d175624da42ae8781cb2264d8276b18b369066ecd7710e",
+    "size": 21920
   },
   {
     "id": "combat",
     "title": "Combat",
     "filename": "combat.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/28_Combat/python/combat.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/28_Combat/python/combat.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "d1a64975315ed7a3fb945ec606a4558952c11856fbdce1083d4b1b90d29041df",
+    "size": 6607
   },
   {
     "id": "craps",
     "title": "Craps",
     "filename": "craps.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/29_Craps/python/craps.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/29_Craps/python/craps.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "654e8b69ed0d806b4a495eefc42eca8c2ba937ea80746456fa320544999e2acc",
+    "size": 2924
   },
   {
     "id": "cube",
     "title": "Cube",
     "filename": "cube.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/30_Cube/python/cube.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/30_Cube/python/cube.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "46a6e4e740f6f7a525c68b7a9edd7ce8db554c1e1e8b757a335527e47bbbaba4",
+    "size": 4455
   },
   {
     "id": "depth_charge",
     "title": "Depth Charge",
     "filename": "depth_charge.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/31_Depth_Charge/python/depth_charge.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/31_Depth_Charge/python/depth_charge.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "a9ebb3f96bb59a6c91d33144d10543fdf845c395864005ad87c7d62ede4eb9f2",
+    "size": 3580
   },
   {
     "id": "diamond",
     "title": "Diamond",
     "filename": "diamond.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/32_Diamond/python/diamond.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/32_Diamond/python/diamond.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "db0f72bebfe9ec6c33a8dda6fbd9e7040e17c6b4271868a5fafefe2b2dd4963c",
+    "size": 1159
   },
   {
     "id": "dice",
     "title": "Dice",
     "filename": "dice.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/33_Dice/python/dice.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/33_Dice/python/dice.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "59527924c96e6ba83bff2692ef6580bb5b47a623e118b05a86d4292217095101",
+    "size": 3493
   },
   {
     "id": "digits",
     "title": "Digits",
     "filename": "Digits.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/34_Digits/python/Digits.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/34_Digits/python/Digits.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "4eba5ab38b8ee0666d56c6b8021bbfdf69794b3887ad0180bd93e0b5625eb1a0",
+    "size": 4613
   },
   {
     "id": "even_wins",
     "title": "Even Wins",
     "filename": "evenwins.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/35_Even_Wins/python/evenwins.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/35_Even_Wins/python/evenwins.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "3c0934c6b2a5459ad6286536e200dd056da40bca9ba3800f92d04ef5f91120d9",
+    "size": 5697
   },
   {
     "id": "flip_flop",
     "title": "Flip Flop",
     "filename": "flipflop.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/36_Flip_Flop/python/flipflop.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/36_Flip_Flop/python/flipflop.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "3d22a94105ca2fa25fbac0c1547bb098541e7d112c457e01c2717d102c370dca",
+    "size": 3968
   },
   {
     "id": "football",
     "title": "Football",
     "filename": "football.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/37_Football/python/football.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/37_Football/python/football.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "622ccf34829508df1cb15fe13fb43d252d26bede012e1771b0fcaa0f9220ce9a",
+    "size": 13144
   },
   {
     "id": "fur_trader",
     "title": "Fur Trader",
     "filename": "furtrader.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/38_Fur_Trader/python/furtrader.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/38_Fur_Trader/python/furtrader.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "00e7df7eb9adbf74ca2dade96f3cbad4a65c5001ba14c6e12b34494d382b5889",
+    "size": 12591
   },
   {
     "id": "golf",
     "title": "Golf",
     "filename": "golf.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/39_Golf/python/golf.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/39_Golf/python/golf.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "b74769485d8434d705f4bbd1b1840bab4ae03229d8970b539383755490a44747",
+    "size": 29762
   },
   {
     "id": "gomoko",
     "title": "Gomoko",
     "filename": "Gomoko.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/40_Gomoko/python/Gomoko.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/40_Gomoko/python/Gomoko.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "37770092c39d06f0291a4064005e497fb19be4a0ad61eca2531ff4ef326b069e",
+    "size": 4669
   },
   {
     "id": "guess",
     "title": "Guess",
     "filename": "guess.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/41_Guess/python/guess.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/41_Guess/python/guess.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "323bd72a8b70b2d17748971bd563dcf76900e503c4145d966c9cbd9436b019ab",
+    "size": 2988
   },
   {
     "id": "gunner",
     "title": "Gunner",
     "filename": "gunner.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/42_Gunner/python/gunner.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/42_Gunner/python/gunner.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "4861af08c4a66b9dd8211de7448f9a488f5abe0c7b16831ce99819885a29fb61",
+    "size": 2954
   },
   {
     "id": "hammurabi",
     "title": "Hammurabi",
     "filename": "hamurabi.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/43_Hammurabi/python/hamurabi.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/43_Hammurabi/python/hamurabi.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "ca51d1db455de2dd5e25cc24bb2c9bb795e491b9c0ce4378fbce7084ab516094",
+    "size": 8934
   },
   {
     "id": "hangman",
     "title": "Hangman",
     "filename": "hangman.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/44_Hangman/python/hangman.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/44_Hangman/python/hangman.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "32f6db494b3f9fa40640d8ef84298adafa2b07ad70ec4d2e84a3eeb7ad9e648e",
+    "size": 6374
   },
   {
     "id": "hello",
     "title": "Hello",
     "filename": "hello.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/45_Hello/python/hello.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/45_Hello/python/hello.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "caa60cf45a8082403526e1ff81b5413bcfbd4452d3a3f6796315a41caa23b133",
+    "size": 5846
   },
   {
     "id": "hexapawn",
     "title": "Hexapawn",
     "filename": "hexapawn.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/46_Hexapawn/python/hexapawn.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/46_Hexapawn/python/hexapawn.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "85dba711de6c3e315a1e907ce1733676008803d35e04fdefc80e9ed8f3f7befd",
+    "size": 15246
   },
   {
     "id": "hi_lo",
     "title": "Hi-Lo",
     "filename": "hilo.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/47_Hi-Lo/python/hilo.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/47_Hi-Lo/python/hilo.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "e38d44dd2ad872e31c9827462fa53eeb165e76a5fe4181f6dabc97a35f136c56",
+    "size": 1630
   },
   {
     "id": "high_iq",
     "title": "High IQ",
     "filename": "High_IQ.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/48_High_IQ/python/High_IQ.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/48_High_IQ/python/High_IQ.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "29f32e56e626246d65616d2da0d2c62258d28807fb2d6e54ad875ed0aff0319e",
+    "size": 4711
   },
   {
     "id": "hockey",
     "title": "Hockey",
     "filename": "hockey.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/49_Hockey/python/hockey.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/49_Hockey/python/hockey.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "1db0c38e832fbcf98303139d31f8bc6948d6e3cab45260ce83fc06dd32ff1380",
+    "size": 18701
   },
   {
     "id": "horserace",
     "title": "Horserace",
     "filename": "horserace.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/50_Horserace/python/horserace.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/50_Horserace/python/horserace.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "6790fccce451438b2090f9ab1df2902fd3e283cee70d7b68051c78b328b30240",
+    "size": 8685
   },
   {
     "id": "hurkle",
     "title": "Hurkle",
     "filename": "hurkle.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/51_Hurkle/python/hurkle.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/51_Hurkle/python/hurkle.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "b5ce3b889644038a52696057ec7a7947b203cda7727ebd5788fed999888e6804",
+    "size": 1865
   },
   {
     "id": "kinema",
     "title": "Kinema",
     "filename": "kinema.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/52_Kinema/python/kinema.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/52_Kinema/python/kinema.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "0f9ced5876de6b638978e617cbef362bc1335eafea691cead2d5b86c114fd5fe",
+    "size": 1775
   },
   {
     "id": "king",
     "title": "King",
     "filename": "king.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/53_King/python/king.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/53_King/python/king.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "5de157c41fe6e404f48d6dd0aad2d5394d9d8bf6699f1667c7807cf3f7287c8d",
+    "size": 15694
   },
   {
     "id": "letter",
     "title": "Letter",
     "filename": "letter.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/54_Letter/python/letter.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/54_Letter/python/letter.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "2be4ce5c4ecbff453d890d19a60293befa0a03028f07f9fb4f86f9926d5fba12",
+    "size": 1766
   },
   {
     "id": "life",
     "title": "Life",
     "filename": "life.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/55_Life/python/life.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/55_Life/python/life.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "7fe13c69266dfd3bae64226d4556c5887ade1ab227dc260e8fcd903caaf13ef3",
+    "size": 4046
   },
   {
     "id": "life_for_two",
     "title": "Life for Two",
     "filename": "life_for_two.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/56_Life_for_Two/python/life_for_two.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/56_Life_for_Two/python/life_for_two.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "c9a859929db2890694111964abef665c333810d192b73d9ca08c6dbb41f53503",
+    "size": 4287
   },
   {
     "id": "literature_quiz",
     "title": "Literature Quiz",
     "filename": "litquiz.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/57_Literature_Quiz/python/litquiz.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/57_Literature_Quiz/python/litquiz.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "fc3f21388e710885fa1c0c2287f8d6b300d36bd9add74e1607e9c572d62cb140",
+    "size": 2820
   },
   {
     "id": "love",
     "title": "Love",
     "filename": "love.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/58_Love/python/love.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/58_Love/python/love.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "79a03144e1e63ba0febb04fb803cd957e7c61571793a56e5fa33cf9c9dccdc3f",
+    "size": 4644
   },
   {
     "id": "lunar_lem_rocket",
     "title": "Lunar LEM Rocket",
     "filename": "lunar.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/59_Lunar_LEM_Rocket/python/lunar.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/59_Lunar_LEM_Rocket/python/lunar.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "6622dd84a3f6dcd35804f7bd5e1ccc14127a8f44fa66894502e5ab5be6fc6d99",
+    "size": 10064
   },
   {
     "id": "mastermind",
     "title": "Mastermind",
     "filename": "mastermind.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/60_Mastermind/python/mastermind.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/60_Mastermind/python/mastermind.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "642892f5608c491dbfcf7ed388d47d72121d8cdc443b3b0adaf6211960467a63",
+    "size": 8707
   },
   {
     "id": "math_dice",
     "title": "Math Dice",
     "filename": "mathdice.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/61_Math_Dice/python/mathdice.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/61_Math_Dice/python/mathdice.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "4dc02f58429992b62ae662ac37c5e154a767fe60aeb372762086db2d896ac71f",
+    "size": 1649
   },
   {
     "id": "mugwump",
     "title": "Mugwump",
     "filename": "mugwump.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/62_Mugwump/python/mugwump.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/62_Mugwump/python/mugwump.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "927b77fe9ae3a378460f4564e6cf65ba8f402ff7e0d80b89e2c5be9a890e0a65",
+    "size": 2415
   },
   {
     "id": "name",
     "title": "Name",
     "filename": "name.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/63_Name/python/name.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/63_Name/python/name.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "2e46771af8b077607f73ea34d927629dd33da85a9a3a65bd79947823c12415c0",
+    "size": 1228
   },
   {
     "id": "nicomachus",
     "title": "Nicomachus",
     "filename": "nicomachus.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/64_Nicomachus/python/nicomachus.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/64_Nicomachus/python/nicomachus.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "c3be2cb9f2a6a1d58ad190156ba2c30cf4d2e62620793c50dabd22d4603cbd88",
+    "size": 1458
   },
   {
     "id": "nim",
     "title": "Nim",
     "filename": "Traditional_NIM.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/65_Nim/python/Traditional_NIM.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/65_Nim/python/Traditional_NIM.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "1f2d155a8779e8e5b3483da5dfd0b52e515502ca838ce5a42125d835f7d4f91d",
+    "size": 3161
   },
   {
     "id": "number",
     "title": "Number",
     "filename": "number.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/66_Number/python/number.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/66_Number/python/number.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "6257f4e196515baa8e12e21a4780cfeb7bbc55012ea6d4d42aaf1464dd889803",
+    "size": 1536
   },
   {
     "id": "one_check",
     "title": "One Check",
     "filename": "onecheck.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/67_One_Check/python/onecheck.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/67_One_Check/python/onecheck.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "84141522bd942009675fa8d720b4446e16ce7bfa1d87f22ec9f033fbb20721b7",
+    "size": 3195
   },
   {
     "id": "orbit",
     "title": "Orbit",
     "filename": "orbit.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/68_Orbit/python/orbit.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/68_Orbit/python/orbit.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "7bfc19dfb1be235d1d8c201b3b42d116e95c2c1165f0668bb48608e86690296c",
+    "size": 4297
   },
   {
     "id": "pizza",
     "title": "Pizza",
     "filename": "pizza.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/69_Pizza/python/pizza.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/69_Pizza/python/pizza.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "fad52c617e6c2e6895969d63f64579f17c2be87b2cdbe42dcf4349818de4bd9b",
+    "size": 4551
   },
   {
     "id": "poetry",
     "title": "Poetry",
     "filename": "poetry.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/70_Poetry/python/poetry.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/70_Poetry/python/poetry.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "cf0552aa42682ce414158b1574f6f345366e0269595033e50c5221df5a325daa",
+    "size": 3067
   },
   {
     "id": "queen",
     "title": "Queen",
     "filename": "queen.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/72_Queen/python/queen.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/72_Queen/python/queen.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "cbc581f9425f8e42c8c1340527c862e5efd78297e50d220bd4429b3ef8b0d46f",
+    "size": 9098
   },
   {
     "id": "reverse",
     "title": "Reverse",
     "filename": "reverse.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/73_Reverse/python/reverse.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/73_Reverse/python/reverse.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "c3986726090a7a832aa8846f997f814955f69d23401a6f3f38940c2f5a4222db",
+    "size": 2471
   },
   {
     "id": "rock_scissors_paper",
     "title": "Rock Scissors Paper",
     "filename": "rockscissors.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/74_Rock_Scissors_Paper/python/rockscissors.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/74_Rock_Scissors_Paper/python/rockscissors.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "3dbd8be2b04e700b3f6e3ec1df082c39358e007032afaeca1b66560fac8578e7",
+    "size": 2605
   },
   {
     "id": "roulette",
     "title": "Roulette",
     "filename": "roulette.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/75_Roulette/python/roulette.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/75_Roulette/python/roulette.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "231e05cef08bf306c75ce0c88693f36e760400fa199eaa951eb8e3bc64ac8c52",
+    "size": 5666
   },
   {
     "id": "russian_roulette",
     "title": "Russian Roulette",
     "filename": "russianroulette.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/76_Russian_Roulette/python/russianroulette.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/76_Russian_Roulette/python/russianroulette.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "9cba49f5c42ec326d9afa03a689e2352b2ac6b98a81553f4a62d1350b7ea0386",
+    "size": 2587
   },
   {
     "id": "salvo",
     "title": "Salvo",
     "filename": "salvo.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/77_Salvo/python/salvo.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/77_Salvo/python/salvo.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "315bd9049f71329dd5a81ff57a877764e181dfd28bb4e013654890271b0fa2c2",
+    "size": 13466
   },
   {
     "id": "sine_wave",
     "title": "Sine Wave",
     "filename": "sinewave.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/78_Sine_Wave/python/sinewave.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/78_Sine_Wave/python/sinewave.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "089bb914a540bbf3cba875124660975e67cdbdd73eead2fdbff4470c2fb9a4cc",
+    "size": 3495
   },
   {
     "id": "slalom",
     "title": "Slalom",
     "filename": "slalom.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/79_Slalom/python/slalom.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/79_Slalom/python/slalom.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "f66911a950116ba00d7d82e17c0a73441b699c44e93d788a41a70f9b2d13251e",
+    "size": 6375
   },
   {
     "id": "slots",
     "title": "Slots",
     "filename": "slots.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/80_Slots/python/slots.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/80_Slots/python/slots.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "a35b044a01b816dc052a82efda4eac9e8f695ba157ec88c610d6cb5e4840d0f4",
+    "size": 4777
   },
   {
     "id": "splat",
     "title": "Splat",
     "filename": "splat.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/81_Splat/python/splat.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/81_Splat/python/splat.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "779e8f27c1a83b7bdddff99517955679f5883417d2d6b1b78349016cda2818dc",
+    "size": 11589
   },
   {
     "id": "stars",
     "title": "Stars",
     "filename": "stars.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/82_Stars/python/stars.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/82_Stars/python/stars.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "073d698aa468e9f03701b1b193b8bf59bcb312668d8bb8dff06292d4ee12fbe4",
+    "size": 3854
   },
   {
     "id": "stock_market",
     "title": "Stock Market",
     "filename": "Stock_Market.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/83_Stock_Market/python/Stock_Market.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/83_Stock_Market/python/Stock_Market.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "e1489f0da24bb09bb94021f1e0b5aabb6bcc8d299bf41ff08ff2ece998f762c3",
+    "size": 7060
   },
   {
     "id": "super_star_trek",
     "title": "Super Star Trek",
     "filename": "superstartrek.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/84_Super_Star_Trek/python/superstartrek.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/84_Super_Star_Trek/python/superstartrek.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "470a18ebae8d4d0e34596013a47517958dfe4e84e6050609aa2ad9ec89f1e7f5",
+    "size": 43338
   },
   {
     "id": "synonym",
     "title": "Synonym",
     "filename": "synonym.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/85_Synonym/python/synonym.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/85_Synonym/python/synonym.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "d26cdc57ca5e4ac3c3fa685dcde9b3180b0654816b88bb75cd437c9d6394cb25",
+    "size": 2546
   },
   {
     "id": "target",
     "title": "Target",
     "filename": "target.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/86_Target/python/target.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/86_Target/python/target.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "50978b7bf69c313914e85f43e80afd7e18d3bb14a91fd7dbdd38ab1371226c7f",
+    "size": 4355
   },
   {
     "id": "tic_tac_toe",
     "title": "Tic-Tac-Toe",
     "filename": "tictactoe2.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/89_Tic-Tac-Toe/python/tictactoe2.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/89_Tic-Tac-Toe/python/tictactoe2.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "8bbf4e3806643f6d0d236cfd7377406cd07e82d476c2fbeeb6466a1a3b3e386e",
+    "size": 7118
   },
   {
     "id": "tower",
     "title": "Tower",
     "filename": "tower.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/90_Tower/python/tower.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/90_Tower/python/tower.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "23c02413a2e6899e5f9bfba4d322d185580e98bc51ca021fe752fe4f42808e71",
+    "size": 4938
   },
   {
     "id": "train",
     "title": "Train",
     "filename": "train.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/91_Train/python/train.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/91_Train/python/train.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "b4bb468ac46b1b420eb0f581fd935a011ee026bfd0e5d5ab97cf9b0ef5867c1b",
+    "size": 1414
   },
   {
     "id": "trap",
     "title": "Trap",
     "filename": "trap.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/92_Trap/python/trap.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/92_Trap/python/trap.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "4f309b1f40d459732ab347388f500966e5d880ef7bf3f47f29304eb4a3a0abcb",
+    "size": 2540
   },
   {
     "id": "war",
     "title": "War",
     "filename": "war.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/94_War/python/war.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/94_War/python/war.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "b1d8054b513623de56e769cee3d9f14064b3d829e52a677fe449537001000c79",
+    "size": 2419
   },
   {
     "id": "weekday",
     "title": "Weekday",
     "filename": "weekday.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/95_Weekday/python/weekday.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/95_Weekday/python/weekday.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "66065b670605e1b42a59e01343e7908693cc2a78507af4863d70c3b20fbe4ff9",
+    "size": 6536
   },
   {
     "id": "word",
     "title": "Word",
     "filename": "word.py",
-    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/master/96_Word/python/word.py",
+    "url": "https://raw.githubusercontent.com/coding-horror/basic-computer-games/5301155192d91d74d337899cecc59dbda59c4c17/96_Word/python/word.py",
     "license": "Unlicense",
-    "sha256": null,
-    "size": null
+    "sha256": "ffa3ba44ae7c742387c5390670b29c7ad090b1f6a61f64e2b6d96804c713e1aa",
+    "size": 2370
   }
 ]
