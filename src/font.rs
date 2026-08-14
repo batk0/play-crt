@@ -89,7 +89,7 @@ pub fn choose_font(
                 }
             }
             Err(e) => {
-                if pt == 14 {
+                if pt == 14 && std::env::var("DEBUG").is_ok() {
                     eprintln!("font load warning: {e}");
                 }
             }
@@ -99,7 +99,9 @@ pub fn choose_font(
     let font = if let Some(f) = font_opt {
         f
     } else {
-        eprintln!("No VT323 found, trying system mono at {chosen_pt}pt");
+        if std::env::var("DEBUG").is_ok() {
+            eprintln!("No VT323 found, trying system mono at {chosen_pt}pt");
+        }
         let mut fallback: Option<sdl2::ttf::Font<'_, 'static>> = None;
         let mut fallback_path = font_path_used;
         for p in font_search_paths() {

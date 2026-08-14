@@ -1,0 +1,47 @@
+[
+  {
+    "id": "zork1",
+    "title": "Zork I: The Great Underground Empire",
+    "filename": "zork1.z3",
+    "url": "https://raw.githubusercontent.com/historicalsource/zork1/master/COMPILED/zork1.z3",
+    "license": "© Infocom — historical source, non-commercial. Original © 1980-1982 Infocom, Inc. Distributed for preservation via historicalsource.",
+    "sha256": null,
+    "size": 91192
+  },
+  {
+    "id": "zork2",
+    "title": "Zork II: The Wizard of Frobozz",
+    "filename": "zork2.z3",
+    "url": "https://raw.githubusercontent.com/historicalsource/zork2/master/COMPILED/zork2.z3",
+    "license": "© Infocom",
+    "sha256": null,
+    "size": 92160
+  },
+  {
+    "id": "zork3",
+    "title": "Zork III: The Dungeon Master",
+    "filename": "zork3.z3",
+    "url": "https://raw.githubusercontent.com/historicalsource/zork3/master/COMPILED/zork3.z3",
+    "license": "© Infocom",
+    "sha256": null,
+    "size": 91136
+  },
+  {
+    "id": "minizork",
+    "title": "Mini-Zork (Sampler)",
+    "filename": "minizork.z3",
+    "url": "https://raw.githubusercontent.com/historicalsource/minizork-1987/master/COMPILED/mini.z3",
+    "license": "© Infocom — sampler, free. Original © Infocom.",
+    "sha256": "c74f01a232e8df4b05d7ebcba14870143f49b3c9a25f194f7a7d2c69e31ea4a6",
+    "size": 52216
+  },
+  {
+    "id": "planetfall",
+    "title": "Planetfall",
+    "filename": "planetfall.z3",
+    "url": "https://raw.githubusercontent.com/historicalsource/planetfall/master/COMPILED/planetfall.z3",
+    "license": "© Infocom",
+    "sha256": null,
+    "size": 131072
+  }
+]

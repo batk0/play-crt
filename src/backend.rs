@@ -355,6 +355,10 @@ pub fn find_story(cli_arg: Option<String>) -> Option<PathBuf> {
         eprintln!("story file not found: {p}");
         return None;
     }
+    // 1) New data_dir/stories/**/*.{z3,z5,z8,zip} — preferred location
+    if let Some(found) = find_in_data_dir() {
+        return Some(found);
+    }
     let candidates = [
         "zork1.z3",
         "zork1.zip",
@@ -400,6 +404,63 @@ pub fn find_story(cli_arg: Option<String>) -> Option<PathBuf> {
         }
     }
     None
+}
+
+fn find_in_data_dir() -> Option<PathBuf> {
+    let sdir = crate::paths::stories_dir();
+    if !sdir.exists() {
+        return None;
+    }
+    // Prefer well-known filenames first, then any story file recursively.
+    let preferred = [
+        sdir.join("zork1").join("zork1.z3"),
+        sdir.join("zork1").join("game.z3"),
+        sdir.join("zork1.z3"),
+        sdir.join("zork1.z5"),
+        sdir.join("zork1.z8"),
+    ];
+    for p in &preferred {
+        if p.exists() {
+            return Some(p.clone());
+        }
+    }
+    // Recursive scan for any .z* / .zip
+    let mut best: Option<PathBuf> = None;
+    collect_data_stories(&sdir, &mut best);
+    best
+}
+
+fn collect_data_stories(dir: &Path, best: &mut Option<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut subdirs: Vec<PathBuf> = Vec::new();
+    for ent in entries.flatten() {
+        let p = ent.path();
+        if p.is_dir() {
+            subdirs.push(p);
+        } else {
+            let ext = p
+                .extension()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            let is_story = matches!(
+                ext.as_str(),
+                "z3" | "z5" | "z8" | "z1" | "z2" | "z4" | "zip" | "zblorb" | "ulx"
+            );
+            if is_story && best.is_none() {
+                *best = Some(p);
+                return;
+            }
+        }
+    }
+    for sub in subdirs {
+        collect_data_stories(&sub, best);
+        if best.is_some() {
+            return;
+        }
+    }
 }
 
 // Backwards-compatible alias for `find_dfrotz` — now always None (no external
