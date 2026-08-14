@@ -840,6 +840,9 @@ pub fn draw_glass(canvas: &mut Canvas<Window>, metrics: &GridMetrics) -> (i32, i
         GLASS_BG,
     );
     // Deep inner frame (tube edge) — 3px dark ring following the rounded shape
+    // Use neutral dark (no phosphor tint) so the bottom edge reads as shadow,
+    // not a green line. Previously 0x050a06 / 0x142a18 leaked green at the
+    // glass/bezel interface.
     draw_rounded_rect_border(
         canvas,
         glass_x,
@@ -848,10 +851,12 @@ pub fn draw_glass(canvas: &mut Canvas<Window>, metrics: &GridMetrics) -> (i32, i
         glass_h,
         GLASS_RADIUS,
         GLASS_INNER_BEVEL,
-        Color::RGB(0x05, 0x0a, 0x06),
+        Color::RGB(0x0a, 0x0a, 0x0a),
         GLASS_BG,
     );
-    // Second bevel ring — slightly lighter, to create a stepped glass edge
+    // Second bevel ring — slightly lighter neutral, to create a stepped glass
+    // edge without phosphor tint. Bottom edge stays dark like the top inner
+    // shadow instead of showing a green wash.
     draw_rounded_rect_border(
         canvas,
         glass_x + 2,
@@ -860,7 +865,7 @@ pub fn draw_glass(canvas: &mut Canvas<Window>, metrics: &GridMetrics) -> (i32, i
         glass_h - 4,
         GLASS_RADIUS - 2,
         2,
-        Color::RGB(0x14, 0x2a, 0x18),
+        Color::RGB(0x1e, 0x1e, 0x1e),
         GLASS_BG,
     );
     // Subtle convex highlight on the glass itself — a soft horizontal sheen
@@ -1595,6 +1600,9 @@ fn draw_bezel_glow(
     glass_w: i32,
     glass_h: i32,
 ) {
+    // Neutral dark halo — previously phosphor-tinted (0x33ff66) which produced a
+    // visible green line at the glass bottom just above the bezel controls.
+    // Use dark neutral so the edge reads as shadow, not phosphor bleed.
     canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
     stroke_rounded_rect(
         canvas,
@@ -1604,7 +1612,7 @@ fn draw_bezel_glow(
         glass_h + 2,
         GLASS_RADIUS + 1,
         1,
-        Color::RGBA(0x33, 0xff, 0x66, 6),
+        Color::RGBA(0x00, 0x00, 0x00, 14),
     );
     stroke_rounded_rect(
         canvas,
@@ -1614,7 +1622,7 @@ fn draw_bezel_glow(
         glass_h + 4,
         GLASS_RADIUS + 2,
         1,
-        Color::RGBA(0x33, 0xff, 0x66, 3),
+        Color::RGBA(0x00, 0x00, 0x00, 8),
     );
 }
 
@@ -1625,35 +1633,11 @@ fn draw_bezel_glow_with_state(
     glass_y: i32,
     glass_w: i32,
     glass_h: i32,
-    state: &ControlState,
+    _state: &ControlState,
 ) {
-    // Base green glow kept for compatibility, plus phosphor-tinted outer ring
+    // Neutral halo only — no phosphor-tinted spill so the bottom edge stays
+    // dark for every phosphor colour (green/amber/white).
     draw_bezel_glow(canvas, glass_x, glass_y, glass_w, glass_h);
-    let ph = state.phosphor_color();
-    canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
-    // Add a subtle phosphor-tinted spill when not green
-    if ph != Color::RGB(0x33, 0xFF, 0x66) {
-        stroke_rounded_rect(
-            canvas,
-            glass_x - 1,
-            glass_y - 1,
-            glass_w + 2,
-            glass_h + 2,
-            GLASS_RADIUS + 1,
-            1,
-            Color::RGBA(ph.r, ph.g, ph.b, 6),
-        );
-        stroke_rounded_rect(
-            canvas,
-            glass_x - 2,
-            glass_y - 2,
-            glass_w + 4,
-            glass_h + 4,
-            GLASS_RADIUS + 2,
-            1,
-            Color::RGBA(ph.r, ph.g, ph.b, 3),
-        );
-    }
 }
 
 #[allow(dead_code)]

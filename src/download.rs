@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest as _, Sha256};
 
+use crate::basic_catalog::BasicEntry;
 use crate::catalog::GameEntry;
 use crate::paths;
 
@@ -166,8 +167,11 @@ where
             }
             total += n as u64;
             if let Some(expected) = len {
-                if expected > 0 {
-                    let pct = ((total * 100) / expected).min(100) as u8;
+                if let Some(pct) = total
+                    .checked_mul(100)
+                    .and_then(|v| v.checked_div(expected))
+                    .map(|v| v.min(100) as u8)
+                {
                     if pct != last_pct {
                         last_pct = pct;
                         progress(pct);
@@ -247,6 +251,108 @@ where
             Err(e)
         }
     }
+}
+
+/// Download a `BasicEntry` to `basic/<id>/<filename>`.
+///
+/// Mirrors `download` for Z-machine games but targets the BASIC data dir.
+/// Uses `downloads/<id>.part` atomic rename, optional sha256, and rejects empty downloads.
+pub fn download_basic<F>(entry: &BasicEntry, progress: F) -> Result<PathBuf, String>
+where
+    F: Fn(u8),
+{
+    paths::ensure_layout().map_err(|e| e.to_string())?;
+
+    let ddir = paths::downloads_dir();
+    let bdir = paths::basic_dir();
+    let final_dir = bdir.join(&entry.id);
+    let final_path = final_dir.join(&entry.filename);
+    let part_path = ddir.join(format!("basic-{}.part", entry.id));
+
+    fs::create_dir_all(&ddir).map_err(|e| format!("create downloads: {e}"))?;
+    fs::create_dir_all(&final_dir).map_err(|e| format!("create {}: {e}", final_dir.display()))?;
+
+    if entry.url.trim().is_empty() {
+        return Err(format!("no remote URL for {}", entry.id));
+    }
+
+    let _ = fs::remove_file(&part_path);
+    progress(0);
+
+    let resp = ureq::get(&entry.url)
+        .timeout(std::time::Duration::from_secs(30))
+        .call()
+        .map_err(|e| format!("download failed for {}: {e}", entry.url))?;
+
+    if !(200..300).contains(&resp.status()) {
+        return Err(format!("http {} for {}", resp.status(), entry.url));
+    }
+
+    let len: Option<u64> = resp
+        .header("Content-Length")
+        .and_then(|v| v.parse::<u64>().ok())
+        .or(entry.size);
+
+    let mut reader = resp.into_reader();
+    let mut out = fs::File::create(&part_path).map_err(|e| format!("create part file: {e}"))?;
+    let mut hasher = if entry.sha256.is_some() {
+        Some(Sha256::new())
+    } else {
+        None
+    };
+    let mut buf = vec![0u8; 32 * 1024];
+    let mut total: u64 = 0;
+    let mut last_pct: u8 = 0;
+
+    loop {
+        let n = std::io::Read::read(&mut reader, &mut buf).map_err(|e| format!("read: {e}"))?;
+        if n == 0 {
+            break;
+        }
+        out.write_all(&buf[..n]).map_err(|e| format!("write part: {e}"))?;
+        if let Some(h) = hasher.as_mut() {
+            h.update(&buf[..n]);
+        }
+        total += n as u64;
+        if let Some(expected) = len {
+            if let Some(pct) = total
+                .checked_mul(100)
+                .and_then(|v| v.checked_div(expected))
+                .map(|v| v.min(100) as u8)
+            {
+                if pct != last_pct {
+                    last_pct = pct;
+                    progress(pct);
+                }
+            }
+        }
+    }
+    drop(out);
+
+    if let Some(expected_hex) = &entry.sha256 {
+        let hash = hasher.expect("hasher").finalize();
+        let got = hex::encode(hash);
+        if !got.eq_ignore_ascii_case(expected_hex) {
+            let _ = fs::remove_file(&part_path);
+            return Err(format!(
+                "sha256 mismatch for {}: expected {expected_hex}, got {got}",
+                entry.id
+            ));
+        }
+    }
+
+    if total == 0 {
+        let _ = fs::remove_file(&part_path);
+        return Err("downloaded file is empty".to_string());
+    }
+
+    if let Err(e) = fs::rename(&part_path, &final_path) {
+        fs::copy(&part_path, &final_path).map_err(|e2| format!("rename {e} and copy fallback {e2}"))?;
+        let _ = fs::remove_file(&part_path);
+    }
+
+    progress(100);
+    Ok(final_path)
 }
 
 #[cfg(test)]

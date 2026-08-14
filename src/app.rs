@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_lines)]
+#![allow(dead_code)]
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -7,11 +8,11 @@ use std::time::Instant;
 
 use sdl2::keyboard::Keycode;
 
-use crate::backend::ZMachineSession;
-use crate::catalog;
+use crate::backend::{Backend, ZMachineSession};
+use crate::basic::BasicSession;
 use crate::controls::ControlState;
 use crate::grid::Grid;
-use crate::menu::MenuState;
+use crate::menu::{CatalogKind, GameKind, MenuEntry, MenuState};
 use crate::saves;
 use crate::slot_menu::SlotMenuState;
 
@@ -20,7 +21,7 @@ pub struct AppState {
     pub(crate) input_buf: String,
     pub(crate) input_history: VecDeque<String>,
     pub(crate) history_idx: Option<usize>,
-    pub(crate) session: Option<ZMachineSession>,
+    pub(crate) backend: Option<Backend>,
     pub(crate) vm_error: Option<String>,
     pub(crate) story_path: Option<PathBuf>,
     pub(crate) blink_on: bool,
@@ -38,12 +39,36 @@ impl AppState {
         vm_error: Option<String>,
         session: Option<ZMachineSession>,
     ) -> Self {
+        let backend = session.map(Backend::ZMachine);
         Self {
             grid: Grid::new(),
             input_buf: String::new(),
             input_history: VecDeque::new(),
             history_idx: None,
-            session,
+            backend,
+            vm_error,
+            story_path,
+            blink_on: true,
+            last_blink: Instant::now(),
+            start_time: Instant::now(),
+            control_state: ControlState::default(),
+            mouse_pos: None,
+            menu: None,
+            slot_menu: None,
+        }
+    }
+
+    pub fn new_with_backend(
+        story_path: Option<PathBuf>,
+        vm_error: Option<String>,
+        backend: Option<Backend>,
+    ) -> Self {
+        Self {
+            grid: Grid::new(),
+            input_buf: String::new(),
+            input_history: VecDeque::new(),
+            history_idx: None,
+            backend,
             vm_error,
             story_path,
             blink_on: true,
@@ -62,7 +87,7 @@ impl AppState {
             input_buf: String::new(),
             input_history: VecDeque::new(),
             history_idx: None,
-            session: None,
+            backend: None,
             vm_error: None,
             story_path: None,
             blink_on: true,
@@ -79,6 +104,15 @@ impl AppState {
         s
     }
 
+    // Backwards compat for code that accesses `session`.
+    #[allow(dead_code)]
+    pub(crate) fn session(&self) -> Option<&ZMachineSession> {
+        match &self.backend {
+            Some(Backend::ZMachine(s)) => Some(s),
+            _ => None,
+        }
+    }
+
     pub(crate) fn is_menu_active(&self) -> bool {
         self.menu.is_some() || self.slot_menu.is_some()
     }
@@ -88,6 +122,10 @@ impl AppState {
         self.slot_menu.is_some()
     }
 
+    pub(crate) fn has_backend(&self) -> bool {
+        self.backend.is_some()
+    }
+
     pub(crate) fn enter_slot_menu(&mut self) -> bool {
         let Some(menu) = &self.menu else {
             return false;
@@ -95,6 +133,10 @@ impl AppState {
         let Some(entry) = menu.selected_entry().cloned() else {
             return false;
         };
+        // BASIC has no slots.
+        if entry.kind != GameKind::ZMachine {
+            return false;
+        }
         if !entry.is_downloaded {
             return false;
         }
@@ -118,7 +160,7 @@ impl AppState {
         let path = slot_state.game_path.clone();
         match ZMachineSession::new_with_slot(path.clone(), game_id.clone(), slot) {
             Ok(sess) => {
-                self.session = Some(sess);
+                self.backend = Some(Backend::ZMachine(sess));
                 self.story_path = Some(path);
                 self.vm_error = None;
                 self.menu = None;
@@ -130,7 +172,6 @@ impl AppState {
                 if let Some(m) = self.menu.as_mut() {
                     m.status_msg = Some(format!("Failed to start: {e}"));
                 }
-                // Return to game menu on failure
                 self.slot_menu = None;
                 if let Some(m) = &self.menu {
                     m.render_to_grid(&mut self.grid);
@@ -140,8 +181,34 @@ impl AppState {
         }
     }
 
+    pub(crate) fn launch_basic(&mut self, entry: &MenuEntry) -> bool {
+        let Some(path) = entry.local_path.clone() else {
+            return false;
+        };
+        match BasicSession::new(entry.id.clone(), path.clone()) {
+            Ok(sess) => {
+                self.backend = Some(Backend::Basic(sess));
+                self.story_path = Some(path);
+                self.vm_error = None;
+                self.menu = None;
+                self.slot_menu = None;
+                self.grid.clear();
+                true
+            }
+            Err(e) => {
+                if let Some(m) = self.menu.as_mut() {
+                    m.status_msg = Some(format!("Failed to start BASIC: {e}"));
+                    let m2 = self.menu.as_ref().unwrap();
+                    self.grid.clear();
+                    m2.render_to_grid(&mut self.grid);
+                }
+                false
+            }
+        }
+    }
+
     /// Attempt to launch the currently selected menu entry (if downloaded).
-    /// Returns true if a session was started.
+    /// For BASIC this launches directly; for Z-machine it shows slot picker.
     #[allow(dead_code)]
     pub(crate) fn launch_selected(&mut self) -> bool {
         let Some(menu) = &self.menu else {
@@ -153,50 +220,37 @@ impl AppState {
         if !entry.is_downloaded {
             return false;
         }
-        let Some(path) = entry.local_path.clone() else {
-            return false;
-        };
-        match ZMachineSession::new(path.clone()) {
-            Ok(sess) => {
-                self.session = Some(sess);
-                self.story_path = Some(path.clone());
-                self.vm_error = None;
-                self.menu = None;
-                self.grid.clear();
-                true
-            }
-            Err(e) => {
-                // Update status and re-render menu
-                let (entries, selected, downloading, status_msg) = {
-                    if let Some(m) = self.menu.as_mut() {
-                        m.status_msg = Some(format!("Failed to start: {e}"));
-                        (
-                            m.entries.clone(),
-                            m.selected,
-                            m.downloading.clone(),
-                            m.status_msg.clone(),
-                        )
-                    } else {
-                        return false;
+        match entry.kind {
+            GameKind::Basic => self.launch_basic(&entry),
+            GameKind::ZMachine => {
+                // For direct launch without slot picker (e.g., tests), use slot 1
+                let Some(path) = entry.local_path.clone() else {
+                    return false;
+                };
+                match ZMachineSession::new(path.clone()) {
+                    Ok(sess) => {
+                        self.backend = Some(Backend::ZMachine(sess));
+                        self.story_path = Some(path.clone());
+                        self.vm_error = None;
+                        self.menu = None;
+                        self.grid.clear();
+                        true
                     }
-                };
-                let tmp = MenuState {
-                    entries,
-                    selected,
-                    downloading,
-                    status_msg,
-                    dl_rx: None,
-                };
-                self.grid.clear();
-                tmp.render_to_grid(&mut self.grid);
-                false
+                    Err(e) => {
+                        if let Some(m) = self.menu.as_mut() {
+                            m.status_msg = Some(format!("Failed to start: {e}"));
+                        }
+                        let tmp = self.menu.as_ref().unwrap();
+                        self.grid.clear();
+                        tmp.render_to_grid(&mut self.grid);
+                        false
+                    }
+                }
             }
         }
     }
 
     pub(crate) fn handle_menu_key(&mut self, keycode: Keycode) -> bool {
-        // Return true if app should quit
-        // If slot menu is active, delegate to slot handling
         if self.slot_menu.is_some() {
             return self.handle_slot_menu_key(keycode);
         }
@@ -217,6 +271,14 @@ impl AppState {
                     m.render_to_grid(&mut self.grid);
                 }
             }
+            Keycode::Left | Keycode::Right | Keycode::H | Keycode::L => {
+                if let Some(menu) = self.menu.as_mut() {
+                    menu.toggle_kind();
+                }
+                if let Some(m) = &self.menu {
+                    m.render_to_grid(&mut self.grid);
+                }
+            }
             Keycode::Return | Keycode::KpEnter => {
                 let is_downloading = self
                     .menu
@@ -226,27 +288,34 @@ impl AppState {
                 if is_downloading {
                     return false;
                 }
-                let is_dl = self
-                    .menu
-                    .as_ref()
-                    .and_then(|m| m.selected_entry())
-                    .is_some_and(|e| !e.is_downloaded);
-                if is_dl {
+                let entry_opt = self.menu.as_ref().and_then(|m| m.selected_entry().cloned());
+                let Some(entry) = entry_opt else {
+                    return false;
+                };
+                if entry.is_downloaded {
+                    match entry.kind {
+                        GameKind::Basic => {
+                            self.launch_basic(&entry);
+                        }
+                        GameKind::ZMachine => {
+                            self.enter_slot_menu();
+                        }
+                    }
+                } else {
+                    // Check python for BASIC
+                    if entry.kind == GameKind::Basic && !crate::basic_catalog::is_python_available() {
+                        if let Some(m) = self.menu.as_mut() {
+                            m.status_msg = Some("python3 not found — install python3 to play BASIC".to_string());
+                            let mm = self.menu.as_ref().unwrap();
+                            mm.render_to_grid(&mut self.grid);
+                        }
+                        return false;
+                    }
                     if let Some(menu) = self.menu.as_mut() {
                         menu.start_download();
                     }
                     if let Some(m) = &self.menu {
                         m.render_to_grid(&mut self.grid);
-                    }
-                } else {
-                    let should_launch = self
-                        .menu
-                        .as_ref()
-                        .and_then(|m| m.selected_entry())
-                        .is_some_and(|e| e.is_downloaded);
-                    if should_launch {
-                        // Transition to slot selection instead of launching directly
-                        self.enter_slot_menu();
                     }
                 }
             }
@@ -286,27 +355,19 @@ impl AppState {
                 let slot = self.slot_menu.as_ref().map_or(1, SlotMenuState::selected_slot);
                 self.launch_with_slot(slot);
             }
-            Keycode::B => {
-                // Back to game list
+            Keycode::B | Keycode::Escape => {
                 self.slot_menu = None;
                 if let Some(m) = &self.menu {
                     m.render_to_grid(&mut self.grid);
                 }
             }
             Keycode::Q => return true,
-            Keycode::Escape => {
-                self.slot_menu = None;
-                if let Some(m) = &self.menu {
-                    m.render_to_grid(&mut self.grid);
-                }
-            }
             _ => {}
         }
         false
     }
 
     pub(crate) fn handle_menu_text(&mut self, text: &str) {
-        // If slot menu is active, digits 1-3 select slot, b/q for nav
         if self.slot_menu.is_some() {
             let t = text.trim().to_ascii_lowercase();
             if t == "b" {
@@ -327,7 +388,6 @@ impl AppState {
                             sm.selected = slot_idx;
                             sm.render_to_grid(&mut self.grid);
                         }
-                        // Immediately launch that slot (number selects + starts)
                         let slot = u8::try_from(slot_idx + 1).expect("slot index fits in u8");
                         self.launch_with_slot(slot);
                     }
@@ -335,15 +395,22 @@ impl AppState {
             }
             return;
         }
-        // Digits 1-9 jump to entry, q/r shortcuts as text as well
         let t = text.trim().to_ascii_lowercase();
         if t == "q" {
-            // Handled via key but also text input
             return;
         }
         if t == "r" {
             if let Some(menu) = self.menu.as_mut() {
                 menu.refresh();
+            }
+            if let Some(m) = &self.menu {
+                m.render_to_grid(&mut self.grid);
+            }
+            return;
+        }
+        if t == "h" || t == "l" {
+            if let Some(menu) = self.menu.as_mut() {
+                menu.toggle_kind();
             }
             if let Some(m) = &self.menu {
                 m.render_to_grid(&mut self.grid);
@@ -360,8 +427,7 @@ impl AppState {
         if let Some(ch) = t.chars().next() {
             if ch.is_ascii_digit() && ch != '0' {
                 let idx = (ch as usize) - ('1' as usize);
-                // Capture decision without holding borrow across launch
-                let should = {
+                let entry_opt = {
                     let Some(menu) = self.menu.as_mut() else {
                         return;
                     };
@@ -369,27 +435,39 @@ impl AppState {
                         return;
                     }
                     menu.selected = idx;
-                    let is_dl = !menu.entries[idx].is_downloaded;
-                    if is_dl {
-                        menu.start_download();
-                        None // handled: download started
-                    } else {
-                        Some(false) // should show slot menu
-                    }
+                    let e = menu.entries[idx].clone();
+                    Some(e)
                 };
-                if should.is_none() {
-                    if let Some(m) = &self.menu {
-                        m.render_to_grid(&mut self.grid);
+                let Some(entry) = entry_opt else { return; };
+                if !entry.is_downloaded {
+                    if entry.kind == GameKind::Basic && !crate::basic_catalog::is_python_available() {
+                        if let Some(m) = self.menu.as_mut() {
+                            m.status_msg = Some("python3 not found — install python3".to_string());
+                            let mm = self.menu.as_ref().unwrap();
+                            mm.render_to_grid(&mut self.grid);
+                        }
+                        return;
+                    }
+                    if let Some(menu) = self.menu.as_mut() {
+                        menu.start_download();
+                        let mm = self.menu.as_ref().unwrap();
+                        mm.render_to_grid(&mut self.grid);
                     }
                     return;
                 }
-                self.enter_slot_menu();
+                match entry.kind {
+                    GameKind::Basic => {
+                        self.launch_basic(&entry);
+                    }
+                    GameKind::ZMachine => {
+                        self.enter_slot_menu();
+                    }
+                }
             }
         }
     }
 
     pub(crate) fn poll_menu_download(&mut self) {
-        // Need to poll without holding borrow across launch
         let poll_result = {
             let Some(menu) = self.menu.as_mut() else {
                 return;
@@ -397,15 +475,12 @@ impl AppState {
             menu.poll_download()
         };
         let Some(res) = poll_result else {
-            // Still downloading — re-render to keep spinner? Keep current grid.
             return;
         };
         match res {
             Ok(path) => {
-                // Refresh entries to mark downloaded, then show slot menu
                 if let Some(menu) = self.menu.as_mut() {
                     menu.refresh();
-                    // Find index of newly downloaded entry by path
                     if let Some(idx) = menu
                         .entries
                         .iter()
@@ -413,10 +488,42 @@ impl AppState {
                     {
                         menu.selected = idx;
                     }
-                    menu.status_msg = Some("Downloaded — select a save slot".to_string());
+                    // For BASIC, auto-launch; for Z-machine, show slot picker
+                    let entry_opt = menu.selected_entry().cloned();
+                    if let Some(entry) = entry_opt {
+                        match entry.kind {
+                            GameKind::Basic => {
+                                menu.status_msg = Some("Downloaded — starting BASIC game".to_string());
+                                drop(entry);
+                                // Need to clone entry again after refresh
+                                let entry2 = self.menu.as_ref().and_then(|m| m.selected_entry().cloned());
+                                if let Some(e2) = entry2 {
+                                    if e2.kind == GameKind::Basic && e2.is_downloaded {
+                                        self.launch_basic(&e2);
+                                        return;
+                                    }
+                                }
+                            }
+                            GameKind::ZMachine => {
+                                menu.status_msg = Some("Downloaded — select a save slot".to_string());
+                            }
+                        }
+                    }
                 }
-                // Transition to slot selection instead of auto-launching
-                self.enter_slot_menu();
+                // If we didn't auto-launch BASIC, show appropriate next screen
+                let should_enter_slot = self
+                    .menu
+                    .as_ref()
+                    .and_then(|m| m.selected_entry())
+                    .is_some_and(|e| e.kind == GameKind::ZMachine && e.is_downloaded);
+                if should_enter_slot {
+                    self.enter_slot_menu();
+                } else if let Some(m) = &self.menu {
+                    // Re-render if still in menu (BASIC auto-launch would have cleared menu)
+                    if self.backend.is_none() {
+                        m.render_to_grid(&mut self.grid);
+                    }
+                }
             }
             Err(e) => {
                 if let Some(menu) = self.menu.as_mut() {
@@ -429,16 +536,18 @@ impl AppState {
     }
 
     pub(crate) fn return_to_menu(&mut self, reason: &str) {
-        // Drop any active Z-machine session and return to the 80×24 story picker.
-        // Always return to the Games menu (not the slot menu) so the player can
-        // pick a different game and then a different slot.
-        let _ = self.session.take();
+        let _ = self.backend.take();
         self.input_buf.clear();
         self.history_idx = None;
         self.vm_error = None;
         self.story_path = None;
         self.slot_menu = None;
-        let mut menu = MenuState::new(catalog::discover());
+        let prev_kind = self
+            .menu
+            .as_ref()
+            .map(|m| m.kind)
+            .unwrap_or(CatalogKind::ZMachine);
+        let mut menu = MenuState::new_for_kind(prev_kind);
         menu.status_msg = Some(reason.to_string());
         menu.render_to_grid(&mut self.grid);
         self.menu = Some(menu);
@@ -568,7 +677,7 @@ impl AppState {
         if self.is_menu_active() {
             return;
         }
-        if self.session.is_some() {
+        if self.backend.is_some() {
             let line = self.input_buf.clone();
             self.grid.newline();
             if !line.is_empty() {
@@ -578,10 +687,10 @@ impl AppState {
                 self.input_history.push_back(line.clone());
             }
             self.history_idx = None;
-            if let Some(sess) = self.session.as_mut() {
-                if let Err(e) = sess.send_input(&line) {
+            if let Some(backend) = self.backend.as_ref() {
+                if let Err(e) = backend.send_input(&line) {
                     self.grid
-                        .put_str(&format!("\n !! Z-machine input failed: {e}\n"));
+                        .put_str(&format!("\n !! backend input failed: {e}\n"));
                 }
             }
             self.input_buf.clear();
@@ -592,16 +701,18 @@ impl AppState {
     }
 
     pub(crate) fn poll_zmachine(&mut self) {
-        let Some(sess) = self.session.as_mut() else {
+        self.poll_backend();
+    }
+
+    pub(crate) fn poll_backend(&mut self) {
+        let Some(backend) = self.backend.as_mut() else {
             return;
         };
         let mut disconnected = false;
         loop {
-            match sess.rx.try_recv() {
+            match backend.try_recv() {
                 Ok(chunk) => {
                     if let Some(filtered) = Self::sanitize_chunk(&chunk) {
-                        // Suppress the backend's "Game ended" banner — we show
-                        // our own status_msg in the menu instead.
                         if filtered.contains("[Game ended") {
                             continue;
                         }
@@ -615,47 +726,73 @@ impl AppState {
                 }
             }
         }
-        if disconnected {
-            self.return_to_menu("Game ended — Returned to menu");
+        if disconnected || backend.is_finished() {
+            // Only return to menu if truly disconnected and no pending data re-checked
+            // Do a final try_recv to drain any remaining messages first
+            let mut has_more = false;
+            if let Some(b) = self.backend.as_ref() {
+                if b.try_recv().is_ok() {
+                    has_more = true;
+                }
+            }
+            if has_more {
+                // Don't return yet; leave data for next poll
+                return;
+            }
+            // Check again if backend reports finished and channel disconnected
+            let is_done = self
+                .backend
+                .as_ref()
+                .is_some_and(crate::backend::Backend::is_finished);
+            // We only auto-return if channel disconnected
+            if disconnected || is_done {
+                // Verify disconnected by trying once more
+                if let Some(b) = self.backend.as_ref() {
+                    match b.try_recv() {
+                        Err(TryRecvError::Disconnected) => {
+                            self.return_to_menu("Game ended — Returned to menu");
+                        }
+                        Err(TryRecvError::Empty) if is_done && b.is_basic() => {
+                            self.return_to_menu("Game ended — Returned to menu");
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 
     pub(crate) fn check_session_exit(&mut self) -> bool {
-        if let Some(sess) = self.session.as_mut() {
-            match sess.rx.try_recv() {
+        if let Some(backend) = self.backend.as_ref() {
+            match backend.try_recv() {
                 Ok(c) => {
                     if let Some(filtered) = Self::sanitize_chunk(&c) {
                         if filtered.contains("[Game ended") {
-                            // Don't render backend banner; poll_session will show menu status
                             return false;
                         }
                         self.grid.put_str(&filtered);
                     }
                     return false;
                 }
-                Err(TryRecvError::Empty) => return false,
+                Err(TryRecvError::Empty) => {
+                    if backend.is_finished() && backend.is_basic() {
+                        return true;
+                    }
+                    return false;
+                }
                 Err(TryRecvError::Disconnected) => return true,
             }
         }
         false
     }
 
-    /// Defensive filter: raw Quetzal / savestate JSON must never reach the
-    /// phosphor grid. The backend `GuiUi::message` already suppresses
-    /// `savestate`/`save`/`restore` control messages, but as a second layer
-    /// we strip any chunk that still contains them (e.g. `>[savestate]
-    /// ["West of House - 0/0", "Rk9S..."]`). Keeps text before the marker
-    /// (like a `>` prompt) and drops the control payload.
     pub(crate) fn sanitize_chunk(chunk: &str) -> Option<String> {
-        // Fast path: no control marker
         if !chunk.contains("[savestate]")
             && !chunk.contains("[save]")
             && !chunk.contains("[restore]")
         {
             return Some(chunk.to_string());
         }
-        // Contains a control marker — strip it and everything after on that line.
-        // Keep prefix before the marker (e.g. the `>` prompt).
         let mut out = String::new();
         for line in chunk.split_inclusive('\n') {
             if line.contains("[savestate]") || line.contains("[save]") || line.contains("[restore]") {
@@ -666,12 +803,9 @@ impl AppState {
                 } else if let Some(idx) = line.find("[restore]") {
                     out.push_str(&line[..idx]);
                 }
-                // drop the rest of the line (the JSON/base64)
-                // ensure we still terminate the line if original had newline
                 if line.ends_with('\n') {
                     out.push('\n');
                 }
-                // Log for debugging, but don't render
                 if std::env::var("DEBUG").is_ok() {
                     eprintln!("[sanitize] dropped control line: {:?}", line.chars().take(80).collect::<String>());
                 }

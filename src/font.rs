@@ -1,3 +1,5 @@
+#![allow(clippy::pedantic)]
+
 use std::env;
 use std::path::{Path, PathBuf};
 

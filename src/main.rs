@@ -1,5 +1,10 @@
+#![allow(clippy::pedantic)]
+#![allow(clippy::nursery)]
+
 mod app;
 mod backend;
+mod basic;
+mod basic_catalog;
 mod catalog;
 mod cli;
 mod constants;
@@ -52,12 +57,14 @@ fn main() -> Result<(), String> {
             d.curvature_x, d.curvature_y
         );
     }
-    if story_arg.is_some() && find_story(story_arg.clone()).is_none() {
-        return Err(format!(
-            "Story file not found: {:?}. Pass --story <path> with existing file or use --story with a path under {}.",
-            story_arg.expect("story_arg some"),
-            paths::stories_dir().display()
-        ));
+    if let Some(arg) = story_arg.as_ref() {
+        if find_story(Some(arg.clone())).is_none() {
+            return Err(format!(
+                "Story file not found: {:?}. Pass --story <path> with existing file or use --story with a path under {}.",
+                arg,
+                paths::stories_dir().display()
+            ));
+        }
     }
 
     // Ensure data layout exists early (creates stories/downloads/saves dirs)
@@ -119,9 +126,8 @@ fn main() -> Result<(), String> {
         st.grid.put_str("\n !! story file not found\n");
         st
     } else {
-        // No --story → always show pure-text menu in the CRT grid
-        let entries = catalog::discover();
-        let menu = MenuState::new(entries);
+        // No --story → always show pure-text menu in the CRT grid (Z-MACHINE first)
+        let menu = MenuState::new_for_kind(menu::CatalogKind::ZMachine);
         let st = AppState::new_with_menu(menu);
         let _ = font_path;
         let _ = pt;
@@ -133,7 +139,7 @@ fn main() -> Result<(), String> {
         }
         st
     };
-    if state.vm_error.is_some() && state.session.is_none() && state.menu.is_none() {
+    if state.vm_error.is_some() && state.backend.is_none() && state.menu.is_none() {
         if let Some(e) = state.vm_error.clone() {
             if !e.contains("not found") {
                 state.grid.put_str(&format!("\n !! {e}\n"));

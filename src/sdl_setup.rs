@@ -1,3 +1,5 @@
+#![allow(clippy::pedantic)]
+
 use std::path::PathBuf;
 
 use crate::constants::{BEZEL, INNER_PAD};

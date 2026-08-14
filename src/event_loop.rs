@@ -39,8 +39,8 @@ pub fn run_event_loop(
         thread::sleep(Duration::from_millis(16));
     }
 
-    // Drop session — closes channel and lets VM thread exit
-    let _ = state.session.take();
+    // Drop backend — closes channel and lets threads exit
+    let _ = state.backend.take();
     Ok(())
 }
 
@@ -127,14 +127,14 @@ pub(crate) fn poll_session(state: &mut AppState) {
         state.poll_menu_download();
         return;
     }
-    let had_session = state.session.is_some();
-    state.poll_zmachine();
-    // poll_zmachine returns to menu on disconnect, so check if we already transitioned
+    let had_backend = state.backend.is_some();
+    state.poll_backend();
+    // poll_backend returns to menu on disconnect, so check if we already transitioned
     if state.is_menu_active() {
         return;
     }
-    if had_session && state.session.is_none() {
-        // Fallback: session ended without poll_zmachine handling (e.g. empty)
+    if had_backend && state.backend.is_none() {
+        // Fallback: backend ended without poll handling (e.g. empty)
         state.return_to_menu("Game ended — Returned to menu");
         return;
     }
@@ -165,7 +165,7 @@ pub(crate) fn render_frame(
     draw_bezel(canvas);
     draw_bottom_controls(canvas, &state.control_state, state.mouse_pos);
     draw_bottom_control_labels(canvas, font, &state.control_state);
-    draw_power_led(canvas, state.session.is_some());
+    draw_power_led(canvas, state.backend.is_some());
     let (glass_x, glass_y, glass_w, glass_h) = draw_glass(canvas, metrics);
 
     draw_grid_text_with_controls(
@@ -176,7 +176,7 @@ pub(crate) fn render_frame(
         raw_flicker,
         hum,
         state.blink_on,
-        state.session.is_some(),
+        state.backend.is_some(),
         &state.control_state,
     )?;
 
@@ -189,7 +189,7 @@ pub(crate) fn render_frame(
         glass_h,
         t,
         raw_flicker,
-        state.session.is_some(),
+        state.backend.is_some(),
         has_error,
         &state.control_state,
     );

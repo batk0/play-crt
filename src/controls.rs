@@ -18,17 +18,12 @@ use crate::crt_pi;
 
 // ── Phosphor ──────────────────────────────────────────────────────────────
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum PhosphorColor {
+    #[default]
     Green,
     Amber,
     White,
-}
-
-impl Default for PhosphorColor {
-    fn default() -> Self {
-        Self::Green
-    }
 }
 
 impl PhosphorColor {

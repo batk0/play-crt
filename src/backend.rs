@@ -1,11 +1,13 @@
 #![allow(clippy::pedantic)]
 #![allow(clippy::nursery)]
+#![allow(dead_code)]
 
 use std::env;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
+use crate::basic::BasicSession;
 use crate::saves;
 use crate::zmachine::instruction::Opcode;
 use crate::zmachine::options::Options;
@@ -399,14 +401,82 @@ impl ZMachineSession {
     }
 
     /// Returns true if the underlying channel is disconnected (VM exited).
-    #[allow(dead_code)]
     pub fn is_finished(&self) -> bool {
-        // If the sender side is dropped, try_recv will return Disconnected
-        // on next poll. We can peek without blocking.
-        // We don't consume messages here; just check if channel is effectively closed.
-        // A simple heuristic: if try_recv returns Disconnected, it's finished.
-        // Caller should poll rx directly for accurate state.
+        if let Some(h) = &self.handle {
+            if h.is_finished() {
+                return true;
+            }
+        }
         false
+    }
+
+    pub fn kill(&mut self) {
+        // Dropping the input sender will cause the VM thread to break on next input wait.
+        // The thread will then exit and drop its sender, making rx Disconnected.
+        // We don't have a direct kill primitive for the pure-Rust VM; dropping is sufficient.
+        // For completeness, we could also try to abort, but we just mark finished via channel drop.
+        // The JoinHandle will be cleaned up on Drop of Self.
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Backend abstraction — unified ZMachine + BASIC
+// ---------------------------------------------------------------------------
+
+/// Unified backend enum covering both Z-machine and BASIC python games.
+pub enum Backend {
+    ZMachine(ZMachineSession),
+    Basic(BasicSession),
+}
+
+impl Backend {
+    #[allow(dead_code)]
+    #[must_use]
+    pub fn game_id(&self) -> &str {
+        match self {
+            Self::ZMachine(s) => &s.game_id,
+            Self::Basic(s) => &s.game_id,
+        }
+    }
+
+    pub fn send_input(&self, line: &str) -> Result<(), String> {
+        match self {
+            Self::ZMachine(s) => s.send_input(line),
+            Self::Basic(s) => s.send_input(line),
+        }
+    }
+
+    pub fn try_recv(&self) -> Result<String, std::sync::mpsc::TryRecvError> {
+        match self {
+            Self::ZMachine(s) => s.try_recv(),
+            Self::Basic(s) => s.try_recv(),
+        }
+    }
+
+    pub fn is_finished(&self) -> bool {
+        match self {
+            Self::ZMachine(s) => s.is_finished(),
+            Self::Basic(s) => s.is_finished(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn kill(&mut self) {
+        match self {
+            Self::ZMachine(s) => s.kill(),
+            Self::Basic(s) => s.kill(),
+        }
+    }
+
+    #[must_use]
+    pub fn is_basic(&self) -> bool {
+        matches!(self, Self::Basic(_))
+    }
+
+    #[allow(dead_code)]
+    #[must_use]
+    pub fn is_zmachine(&self) -> bool {
+        matches!(self, Self::ZMachine(_))
     }
 }
 

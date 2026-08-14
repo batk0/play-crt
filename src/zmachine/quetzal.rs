@@ -121,7 +121,7 @@ impl QuetzalSave {
 
         // If the body length is odd, add a padding byte. This extra byte is
         // *not* included in the length marker above.
-        if body.len() % 2 != 0 {
+        if !body.len().is_multiple_of(2) {
             bytes.push(0);
         }
     }

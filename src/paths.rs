@@ -71,6 +71,11 @@ pub fn stories_dir() -> PathBuf {
     data_dir().join("stories")
 }
 
+#[must_use]
+pub fn basic_dir() -> PathBuf {
+    data_dir().join("basic")
+}
+
 #[allow(dead_code)]
 #[must_use]
 pub fn saves_dir(game_id: &str) -> PathBuf {
@@ -87,6 +92,7 @@ pub fn ensure_layout() -> Result<(), String> {
     for dir in [
         data_dir(),
         stories_dir(),
+        basic_dir(),
         downloads_dir(),
         data_dir().join("saves"),
     ] {
@@ -201,6 +207,32 @@ fn manifest_search_paths() -> Vec<PathBuf> {
         }
     }
     v.push(PathBuf::from("/usr/local/share/play-crt/stories.json"));
+    v
+}
+
+/// Return path to the bundled BASIC manifest (assets/manifests/basic.json).
+#[must_use]
+pub fn bundled_basic_manifest_path() -> Option<PathBuf> {
+    let candidates = basic_manifest_search_paths();
+    candidates.into_iter().find(|p| p.exists())
+}
+
+fn basic_manifest_search_paths() -> Vec<PathBuf> {
+    let mut v = Vec::new();
+    v.push(PathBuf::from("assets/manifests/basic.json"));
+    if let Ok(cwd) = env::current_dir() {
+        for anc in cwd.ancestors() {
+            v.push(anc.join("assets/manifests/basic.json"));
+        }
+    }
+    if let Ok(exe) = env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            v.push(parent.join("assets/manifests/basic.json"));
+            v.push(parent.join("../assets/manifests/basic.json"));
+            v.push(parent.join("../../assets/manifests/basic.json"));
+        }
+    }
+    v.push(PathBuf::from("/usr/local/share/play-crt/basic.json"));
     v
 }
 
