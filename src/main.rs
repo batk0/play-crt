@@ -7,10 +7,10 @@ mod crt_pi;
 mod font;
 mod grid;
 mod render;
+mod zmachine;
 
 use std::collections::VecDeque;
 use std::env;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::TryRecvError;
 use std::thread;
@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-use backend::{find_dfrotz, find_story, spawn_dfrotz, DfrotzSession};
+use backend::{find_story, ZMachineSession};
 use constants::{
     f32_to_u8_clamped, u32_to_i32, usize_to_i32, BEZEL, INNER_PAD, WINDOW_H, WINDOW_W,
 };
@@ -68,8 +68,8 @@ struct AppState {
     input_buf: String,
     input_history: VecDeque<String>,
     history_idx: Option<usize>,
-    session: Option<DfrotzSession>,
-    dfrotz_error: Option<String>,
+    session: Option<ZMachineSession>,
+    vm_error: Option<String>,
     story_path: Option<PathBuf>,
     blink_on: bool,
     last_blink: Instant,
@@ -81,8 +81,8 @@ struct AppState {
 impl AppState {
     fn new(
         story_path: Option<PathBuf>,
-        dfrotz_error: Option<String>,
-        session: Option<DfrotzSession>,
+        vm_error: Option<String>,
+        session: Option<ZMachineSession>,
     ) -> Self {
         Self {
             grid: Grid::new(),
@@ -90,7 +90,7 @@ impl AppState {
             input_history: VecDeque::new(),
             history_idx: None,
             session,
-            dfrotz_error,
+            vm_error,
             story_path,
             blink_on: true,
             last_blink: Instant::now(),
@@ -100,7 +100,7 @@ impl AppState {
         }
     }
 
-    fn seed_banner(&mut self, font_path: &Path, pt: u16, dfrotz_path: Option<PathBuf>) {
+    fn seed_banner(&mut self, font_path: &Path, pt: u16) {
         self.grid
             .put_str(" ZORK CRT  •  SDL2 phosphor  •  80×24  •  VT323\n");
         self.grid
@@ -111,12 +111,8 @@ impl AppState {
             self.grid
                 .put_str(" story: (none) — pass --story <path> or pick file (F1)\n");
         }
-        if let Some(dp) = dfrotz_path {
-            self.grid.put_str(&format!(" dfrotz: {}\n", dp.display()));
-        } else {
-            self.grid
-                .put_str(" dfrotz: NOT FOUND — brew install frotz\n");
-        }
+        self.grid
+            .put_str(" Z-machine: pure Rust (encrusted, MIT) • 80×24 • no external frotz\n");
         self.grid.put_str(
             " ────────────────────────────────────────────────────────────────────────────────\n",
         );
@@ -249,12 +245,9 @@ impl AppState {
             }
             self.history_idx = None;
             if let Some(sess) = self.session.as_mut() {
-                let to_send = format!("{line}\n");
-                if let Err(e) = sess.stdin.write_all(to_send.as_bytes()) {
+                if let Err(e) = sess.send_input(&line) {
                     self.grid
-                        .put_str(&format!("\n !! write to dfrotz failed: {e}\n"));
-                } else {
-                    let _ = sess.stdin.flush();
+                        .put_str(&format!("\n !! Z-machine input failed: {e}\n"));
                 }
             }
             self.input_buf.clear();
@@ -264,18 +257,15 @@ impl AppState {
                 .pick_file();
             restore_focus(video, canvas, event_pump);
             if let Some(p) = picked {
-                let dfrotz = find_dfrotz();
-                if let Some(dp) = dfrotz {
-                    match spawn_dfrotz(&dp, &p) {
-                        Ok(s) => {
-                            self.grid.clear();
-                            self.grid.put_str(&format!(" [picked {}]\n\n", p.display()));
-                            self.session = Some(s);
-                            self.story_path = Some(p);
-                            self.dfrotz_error = None;
-                        }
-                        Err(e) => self.grid.put_str(&format!("\n !! {e}\n")),
+                match ZMachineSession::new(p.clone()) {
+                    Ok(s) => {
+                        self.grid.clear();
+                        self.grid.put_str(&format!(" [picked {}]\n\n", p.display()));
+                        self.session = Some(s);
+                        self.story_path = Some(p);
+                        self.vm_error = None;
                     }
+                    Err(e) => self.grid.put_str(&format!("\n !! {e}\n")),
                 }
             }
         } else {
@@ -284,14 +274,18 @@ impl AppState {
         }
     }
 
-    fn poll_dfrotz(&mut self) {
+    fn poll_zmachine(&mut self) {
         let Some(sess) = self.session.as_mut() else {
             return;
         };
         let mut disconnected = false;
         loop {
             match sess.rx.try_recv() {
-                Ok(chunk) => self.grid.put_str(&chunk),
+                Ok(chunk) => {
+                    if let Some(filtered) = Self::sanitize_chunk(&chunk) {
+                        self.grid.put_str(&filtered);
+                    }
+                }
                 Err(TryRecvError::Empty) => break,
                 Err(TryRecvError::Disconnected) => {
                     disconnected = true;
@@ -300,52 +294,73 @@ impl AppState {
             }
         }
         if disconnected {
-            let status = sess.child.try_wait().ok().flatten();
-            self.grid.put_str(&format!(
-                "\n\n [dfrotz exited{} — press Esc to quit, F1 to load another story]\n",
-                status.map(|s| format!(" status={s}")).unwrap_or_default()
-            ));
+            self.grid.put_str(
+                "\n\n [Z-machine session ended — press Esc to quit, F1 to load another story]\n",
+            );
             self.session = None;
-            return;
-        }
-        if let Ok(Some(_status)) = sess.child.try_wait() {
-            let mut had_more = false;
-            loop {
-                match sess.rx.try_recv() {
-                    Ok(c) => {
-                        self.grid.put_str(&c);
-                        had_more = true;
-                    }
-                    Err(TryRecvError::Empty) => break,
-                    Err(TryRecvError::Disconnected) => {
-                        self.session = None;
-                        return;
-                    }
-                }
-            }
-            if !had_more {
-                self.grid
-                    .put_str("\n [dfrotz exited — press Esc to quit, F1 to load another story]\n");
-            }
         }
     }
 
     fn check_session_exit(&mut self) -> bool {
         if let Some(sess) = self.session.as_mut() {
-            if let Ok(Some(_)) = sess.child.try_wait() {
-                match sess.rx.try_recv() {
-                    Ok(c) => {
-                        self.grid.put_str(&c);
-                        return false;
+            match sess.rx.try_recv() {
+                Ok(c) => {
+                    if let Some(filtered) = Self::sanitize_chunk(&c) {
+                        self.grid.put_str(&filtered);
                     }
-                    Err(TryRecvError::Empty) => {
-                        return true;
-                    }
-                    Err(TryRecvError::Disconnected) => return true,
+                    return false;
                 }
+                Err(TryRecvError::Empty) => return false,
+                Err(TryRecvError::Disconnected) => return true,
             }
         }
         false
+    }
+
+    /// Defensive filter: raw Quetzal / savestate JSON must never reach the
+    /// phosphor grid. The backend `GuiUi::message` already suppresses
+    /// `savestate`/`save`/`restore` control messages, but as a second layer
+    /// we strip any chunk that still contains them (e.g. `>[savestate]
+    /// ["West of House - 0/0", "Rk9S..."]`). Keeps text before the marker
+    /// (like a `>` prompt) and drops the control payload.
+    fn sanitize_chunk(chunk: &str) -> Option<String> {
+        // Fast path: no control marker
+        if !chunk.contains("[savestate]")
+            && !chunk.contains("[save]")
+            && !chunk.contains("[restore]")
+        {
+            return Some(chunk.to_string());
+        }
+        // Contains a control marker — strip it and everything after on that line.
+        // Keep prefix before the marker (e.g. the `>` prompt).
+        let mut out = String::new();
+        for line in chunk.split_inclusive('\n') {
+            if line.contains("[savestate]") || line.contains("[save]") || line.contains("[restore]") {
+                if let Some(idx) = line.find("[savestate]") {
+                    out.push_str(&line[..idx]);
+                } else if let Some(idx) = line.find("[save]") {
+                    out.push_str(&line[..idx]);
+                } else if let Some(idx) = line.find("[restore]") {
+                    out.push_str(&line[..idx]);
+                }
+                // drop the rest of the line (the JSON/base64)
+                // ensure we still terminate the line if original had newline
+                if line.ends_with('\n') {
+                    out.push('\n');
+                }
+                // Log for debugging, but don't render
+                if std::env::var("DEBUG").is_ok() {
+                    eprintln!("[sanitize] dropped control line: {:?}", line.chars().take(80).collect::<String>());
+                }
+            } else {
+                out.push_str(line);
+            }
+        }
+        if out.trim().is_empty() {
+            None
+        } else {
+            Some(out)
+        }
     }
 }
 
@@ -431,29 +446,22 @@ fn handle_f1_picker(
     let Some(p) = picked else {
         return;
     };
-    if let Some(mut s) = state.session.take() {
-        let _ = s.child.kill();
-    }
-    let Some(dp) = find_dfrotz() else {
-        state
-            .grid
-            .put_str("\n !! dfrotz still not found — brew install frotz\n");
-        return;
-    };
-    match spawn_dfrotz(&dp, &p) {
+    // Drop previous session (closes channel, VM thread exits)
+    let _ = state.session.take();
+    match ZMachineSession::new(p.clone()) {
         Ok(s) => {
             state.grid.clear();
             state
                 .grid
-                .put_str(&format!(" [picked {} — spawning dfrotz]\n\n", p.display()));
+                .put_str(&format!(" [picked {} — starting Z-machine]\n\n", p.display()));
             state.session = Some(s);
             state.story_path = Some(p);
-            state.dfrotz_error = None;
+            state.vm_error = None;
             state.input_buf.clear();
         }
         Err(e) => {
             state.grid.put_str(&format!("\n !! spawn failed: {e}\n"));
-            state.dfrotz_error = Some(e);
+            state.vm_error = Some(e);
         }
     }
 }
@@ -539,7 +547,7 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
     if cli.show_version {
-        println!("zork-crt-gui 0.1.0 (SDL2 CRT, dfrotz backend)");
+        println!("zork-crt-gui 0.1.0 (SDL2 CRT, pure Rust Z-machine — encrusted/MIT)");
         return Ok(());
     }
 
@@ -565,7 +573,6 @@ fn main() -> Result<(), String> {
             story_arg.expect("story_arg some")
         ));
     }
-    let dfrotz_path = find_dfrotz();
     let (sdl, video, ttf) = init_sdl()?;
     let mut canvas = create_window(&video)?;
     // Optional crt-pi GL path: compile the shader at startup and keep it alive.
@@ -598,62 +605,47 @@ fn main() -> Result<(), String> {
     video.text_input().start();
     let (font, font_path, pt, metrics) = setup_font_and_metrics(&ttf)?;
 
-    let (initial_session, initial_error) = if let (Some(dp), Some(sp)) =
-        (&dfrotz_path, &story_path_init)
-    {
-        match spawn_dfrotz(dp, sp) {
+    let (initial_session, initial_error) = if let Some(sp) = &story_path_init {
+        match ZMachineSession::new(sp.clone()) {
             Ok(s) => (Some(s), None),
             Err(e) => (None, Some(e)),
         }
     } else {
-        let err = if dfrotz_path.is_none() {
-            Some("dfrotz not found. Install: brew install frotz (looks at /opt/homebrew/bin/dfrotz, /usr/local/bin/dfrotz, $PATH).".to_string())
-        } else {
-            None
-        };
-        (None, err)
+        (None, None)
     };
 
     let mut state = AppState::new(story_path_init, initial_error, initial_session);
-    state.seed_banner(&font_path, pt, dfrotz_path.clone());
-    if let (Some(dp), Some(sp)) = (&dfrotz_path, &state.story_path) {
+    state.seed_banner(&font_path, pt);
+    if let Some(sp) = &state.story_path {
         if state.session.is_some() {
             state.grid.put_str(&format!(
-                "\n [spawning dfrotz {} -w 80 -h 24 -m -p {}]\n\n",
-                dp.display(),
-                sp.display()
+                "\n [starting Z-machine {} — pure Rust, 80×24]\n\n",
+                sp.display(),
             ));
-        } else if let Some(e) = &state.dfrotz_error {
+        } else if let Some(e) = &state.vm_error {
             state
                 .grid
-                .put_str(&format!("\n !! dfrotz spawn failed: {e}\n\n"));
+                .put_str(&format!("\n !! Z-machine spawn failed: {e}\n\n"));
         }
-    } else {
-        if dfrotz_path.is_none() {
-            state
-                .grid
-                .put_str("\n !! dfrotz not found — install with: brew install frotz\n");
-            state
-                .grid
-                .put_str("    then re-run: cargo run -- --story <path>\n\n");
-        }
-        if state.story_path.is_none() {
-            state
-                .grid
-                .put_str("\n !! no story file — pass --story <path> or use file picker\n");
-            state
-                .grid
-                .put_str("    e.g. cargo run -- --story ./zork1.z3\n");
-            state
-                .grid
-                .put_str("        cargo run -- --story assets/stories/zork1.z3\n");
-            state.grid.put_str(
-                "    or drag a .z3/.z5/.z8/.zip onto the window (not yet) — use picker via rfd\n\n",
-            );
-        }
+    } else if state.story_path.is_none() {
+        state
+            .grid
+            .put_str("\n !! no story file — pass --story <path> or use file picker\n");
+        state
+            .grid
+            .put_str("    e.g. cargo run -- --story ./zork1.z3\n");
+        state
+            .grid
+            .put_str("        cargo run -- --story assets/stories/zork1.z3\n");
+        state.grid.put_str(
+            "    or drag a .z3/.z5/.z8/.zip onto the window (not yet) — use picker via rfd (F1)\n\n",
+        );
+        state.grid.put_str(
+            "    Pure Rust backend — no external frotz needed; binary is self-contained MIT.\n\n",
+        );
     }
-    if state.dfrotz_error.is_some() && state.session.is_none() && dfrotz_path.is_some() {
-        if let Some(e) = state.dfrotz_error.clone() {
+    if state.vm_error.is_some() && state.session.is_none() {
+        if let Some(e) = state.vm_error.clone() {
             if !e.contains("not found") {
                 state.grid.put_str(&format!("\n !! {e}\n"));
             }
@@ -689,10 +681,8 @@ fn run_event_loop(
         thread::sleep(Duration::from_millis(16));
     }
 
-    if let Some(mut s) = state.session.take() {
-        let _ = s.child.kill();
-        let _ = s.child.wait();
-    }
+    // Drop session — closes channel and lets VM thread exit
+    let _ = state.session.take();
     Ok(())
 }
 
@@ -746,14 +736,12 @@ fn pump_events(
 
 fn poll_session(state: &mut AppState) {
     let had_session = state.session.is_some();
-    state.poll_dfrotz();
+    state.poll_zmachine();
     if had_session && state.session.is_none() {
         return;
     }
     if state.check_session_exit() {
-        if let Some(mut s) = state.session.take() {
-            let _ = s.child.try_wait();
-        }
+        let _ = state.session.take();
     }
 }
 
@@ -794,7 +782,7 @@ fn render_frame(
         &state.control_state,
     )?;
 
-    let has_error = state.dfrotz_error.is_some();
+    let has_error = state.vm_error.is_some();
     draw_scanlines_and_vignette_with_state(
         canvas,
         glass_x,

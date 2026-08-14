@@ -108,11 +108,10 @@ STORY REQUIRED:
     No story is bundled. Provide --story <path> (e.g. from a historical
     zork1 checkout) or place a story at assets/stories/zork1.z3.
 
-DFROTZ:
-    Requires 'dfrotz' (dumb frotz). Install via:
-      brew install frotz
-    Looked up at /opt/homebrew/bin/dfrotz, /usr/local/bin/dfrotz, and $PATH.
-    If missing, GUI shows an error screen with instructions.
+Z-MACHINE:
+    Pure Rust interpreter (vendored encrusted, MIT) — no external frotz needed.
+    Binary is self-contained and portable (supports .z3/.z5/.z8 and .zip archives).
+    Screen is fixed 80×24, matching the CRT grid.
 
 CONTROLS (in GUI):
     Type + Enter to send commands. Backspace to edit. Esc or close window to quit.

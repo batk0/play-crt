@@ -2,9 +2,9 @@
 
 Portable Rust + SDL2 CRT that runs **Zork I** (and any `.z3/.z5/.z8/.zip`) with a full phosphor-CRT look: curvature (rounded glass + vignette), scanlines, vignette, bloom, flicker, and a dark plastic bezel with power LED + bottom control strip (phosphor colour + toggles). Strict **80×24** monospaced grid, **VT323** font (bundled, OFL).
 
-Backend is a `dfrotz` subprocess (`-w 80 -h 24 -m -p`) so it works with any Z-machine story via `--story`. No story file is bundled in this standalone repo — provide one with `--story <path>` (e.g. built from the historical `zork1` repo) or place it at `assets/stories/zork1.z3` / `./zork1.z3`.
+Backend is a **pure-Rust Z-machine** (vendored [encrusted](https://github.com/demille/encrusted), MIT) — no external `dfrotz`/`frotz` needed. The binary is self-contained MIT, portable, and works with any Z-machine story via `--story`. No story file is bundled — provide one with `--story <path>` or place it at `assets/stories/zork1.z3` / `./zork1.z3`.
 
-> No Python. Single portable binary via `cargo build`.
+> No Python. Single portable binary via `cargo build`. No `brew install frotz` required.
 
 ---
 
@@ -13,8 +13,8 @@ Backend is a `dfrotz` subprocess (`-w 80 -h 24 -m -p`) so it works with any Z-ma
 ### macOS (Homebrew, Apple Silicon / Intel)
 
 ```bash
-# 1) toolchain + frotz + SDL2
-brew install frotz sdl2 sdl2_ttf
+# 1) toolchain + SDL2
+brew install sdl2 sdl2_ttf
 # rustup if you don't have it
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # source cargo
@@ -47,7 +47,7 @@ cargo run --              # opens native file picker (F1) or shows help screen
 
 ```bash
 sudo apt update
-sudo apt install libsdl2-dev libsdl2-ttf-dev frotz pkg-config build-essential
+sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config build-essential
 cargo build
 ./target/debug/zork-crt-gui --story /path/to/zork1.z3
 ```
@@ -56,8 +56,7 @@ cargo build
 
 - Install Rust via https://rustup.rs
 - Install SDL2 + SDL2_ttf dev libs and add to `LIB`/`PATH`, or use `sdl2` crate's `bundled` feature: edit `Cargo.toml` to `sdl2 = { version="0.38", features=["ttf","bundled"] }` then `cargo build`.
-- Install `dfrotz.exe` (from https://davidgriffith.github.io/frotz/) and ensure it's on `PATH`, or set `DFROTZ` env.
-- `cargo run -- --story path\to\zork1.z3`
+- `cargo run -- --story path\to\zork1.z3` — no external frotz binary needed.
 
 ---
 
@@ -68,6 +67,7 @@ zork-crt-gui [OPTIONS] [STORY]
 
 OPTIONS:
   --story <PATH>   Path to .z3/.z5/.z8/.zip (also positional)
+  --curvature <F[,F]>  Barrel curvature 0.0..1.0
   --help, -h
   --version
 
@@ -91,9 +91,9 @@ EXAMPLES:
 - `Enter` → send line to the Z-machine
 - `Backspace` → edit current line
 - `Up`/`Down` → command history (100 entries)
-- `F1` → native file picker for another story (restarts dfrotz)
+- `F1` → native file picker for another story (restarts the Rust VM)
 - `Esc` or close window → quit
-- **Mouse (bottom 48 px bezel bar)** — click the 3-way phosphor switch (Green | Amber | White) to change text/bloom colour; click the three toggle switches to enable/disable **Curvature**, **Flicker**, and **Scanlines** live. Hover highlights the control under the cursor. Power LED (far right, red when dfrotz alive) is always visible.
+- **Mouse (bottom 48 px bezel bar)** — click the 3-way phosphor switch (Green | Amber | White) to change text/bloom colour; click the three toggle switches to enable/disable **Curvature**, **Flicker**, and **Scanlines** live. Hover highlights the control under the cursor. Power LED (far right, red when Z-machine alive) is always visible.
 
 ---
 
@@ -108,7 +108,7 @@ This build integrates **[crt-pi](https://github.com/libretro/glsl-shaders/blob/m
 
 Result: with GL you get a true fragment shader; without GL (headless, CI, any SDL2 target) you get a pixel-identical CPU approximation. Either way the **80×24 VT323 grid, phosphor bloom, flicker/hum** are preserved and the bottom bezel now hosts interactive controls.
 
-**Bezel** — dark plastic outer frame, hilite/shadow edges, power LED (red when dfrotz alive), bottom control strip with phosphor colour switch + 3 effect toggles (no screws/speaker/brand plate).  
+**Bezel** — dark plastic outer frame, hilite/shadow edges, power LED (red when Z-machine alive), bottom control strip with phosphor colour switch + 3 effect toggles (no screws/speaker/brand plate).  
 **Phosphor** — selectable **Green** `#33FF66` (`PHOSPHOR`), **Amber** `#FFB000`, **White** `#E0E0C0`; bloom/dim variants derived per colour (`controls::PhosphorColor`). Toggle via `ControlState` and `draw_bottom_controls`.  
 **Curvature** — rounded glass illusion via inner shadow + vignette + top highlight; on GL via `Distort()` barrel math (`CURVATURE_X/Y 0.20` + `0.23` barrel scale). Disabled live when the **CURVE** toggle is off (`ControlState::curvature_enabled`, `crt_pi::CrtPiParams` zeroed, `barrel_inset_for_y` skipped).  
 **Scanlines** — crt-pi weighted (`max(1−dist²·6, 0.12)`), multisampled, bloom-scaled, mask-modulated. Disabled when **SCAN** toggle off (skips `draw_scanlines` + `draw_aperture_mask`).  
@@ -137,7 +137,7 @@ curl -L https://github.com/google/fonts/raw/main/ofl/vt323/VT323-Regular.ttf -o 
 
 ```
 .
-├── Cargo.toml          — sdl2 (ttf) + rfd (file picker) + glow (crt-pi GL)
+├── Cargo.toml          — sdl2 (ttf) + rfd (file picker) + glow (crt-pi GL) + pure Rust Z-machine (vendored encrusted)
 ├── .cargo/config.toml  — adds /opt/homebrew/lib to linker + PKG_CONFIG_PATH on macOS
 ├── assets/
 │   ├── fonts/VT323-Regular.ttf + OFL.txt
@@ -147,35 +147,37 @@ curl -L https://github.com/google/fonts/raw/main/ofl/vt323/VT323-Regular.ttf -o 
 │   └── stories/                  — optional: place zork1.z3 here (not bundled)
 └── src/
     ├── main.rs         — arg parsing, SDL/TTF init, GL attr, CrtGl probe, AppState (+ ControlState/mouse), main loop, mouse hit-test
-    ├── cli.rs          — Cli + parse_args/print_help
+    ├── cli.rs          — Cli + parse_args/print_help (now documents pure-Rust Z-machine, no dfrotz)
     ├── constants.rs    — COLS/ROWS/WINDOW_W/WINDOW_H/COLORS + safe conversions (PHOSPHOR now via ControlState)
     ├── controls.rs     — ControlState, PhosphorColor (Green/Amber/White), bottom-bar layout & hit-testing, crt_params()
     ├── grid.rs         — Grid (80×24, cursor, scroll, put_char)
     ├── font.rs         — font_search_paths, load_best_font, choose_font
-    ├── backend.rs      — DfrotzSession, find_dfrotz, find_story, spawn_dfrotz
+    ├── backend.rs      — ZMachineSession (pure Rust), find_story, load_story_bytes, GuiUi
+    ├── zmachine/       — vendored encrusted (MIT): buffer/frame/instruction/options/quetzal/traits/zmachine
+    │   └── fixtures/minizork.z3 — test fixture
     ├── crt_pi.rs       — Rust port of crt-pi math (CalcScanLine, gamma, bloom, mask, distort)
     ├── crt_gl.rs       — glow wrapper: compiles crt-pi.vert/.frag, validates GL path
     └── render.rs       — CRT rendering: bezel (no screws/grille/plate), glass, phosphor-aware bloom text, crt-pi scanlines/mask/vignette, bottom controls (draw_bottom_controls/draw_bottom_control_labels)
 ```
 
-- `find_dfrotz()` — `/opt/homebrew/bin/dfrotz`, `/usr/local/bin/dfrotz`, `$PATH`
-- `find_story()` — CLI arg primary; else searches `./zork1.z3`, `./zork1.zip`, `./assets/stories/*`, `./stories/*`, ancestors and exe-relative paths
-- `spawn_dfrotz()` — `Command -w 80 -h 24 -m -p`, stdout+stderr reader threads → mpsc channel
-- main loop — SDL event pump (TextInput + KeyDown), non-blocking dfrotz poll, 60 Hz render: bezel → glass → bloom text → scanlines/vignette/flicker
+- `find_story()` — CLI arg primary; else searches `./zork1.z3`, `./zork1.zip`, `./assets/stories/*`, `./stories/*`, ancestors and exe-relative paths. `.zip` archives are handled via the `zip` crate (first contained `.z*` story is extracted).
+- `ZMachineSession::new(PathBuf)` — loads story bytes, validates version 1..=8, spawns a worker thread running `Zmachine::new(data, GuiUi, Options)` with 80×24 header (`set_screen_size(80,24)`), drives `step()`/`handle_input()` loop, streams output via `mpsc::Receiver<String>` and accepts input via `send_input(&str)`. Quit/Restore are handled internally; Save is no-op (reports success) — Quetzal persistence can be added later.
+- `GuiUi` — implements `zmachine::traits::UI` with a channel sender; `print`/`print_object`/`clear` forward to the CRT grid, `message` surfaces save/restore notices, `set_status_bar` renders as a text line.
+- main loop — SDL event pump (TextInput + KeyDown), non-blocking `poll_zmachine`, 60 Hz render: bezel → glass → bloom text → scanlines/vignette/flicker
 
-**Why subprocess vs pure Rust Z-machine?**
-`dfrotz -m -p -w 80 -h 24` is the most faithful dumb terminal for Infocom games and already installed via `brew install frotz`. It also means zero Z-machine correctness risk for v1. A pure-Rust crate (`zmachine`, `ifzmachine`, etc.) could replace `spawn_dfrotz` later with the same `Grid` interface — the GUI already abstracts I/O via the channel.
+**Why pure Rust vs dfrotz subprocess?**
+Previously the app spawned `dfrotz -w 80 -h 24 -m -p` (GPL) via `Popen` and threads. The new backend vendors **encrusted** (MIT) — a pure-Rust Z-machine — so the binary is self-contained MIT, portable, and has no external `frotz` dependency. Research on crates.io shows no `zork-rs` crate exists; the closest MIT pure-Rust interpreters are `encrusted` (MIT, mature, supports .z3/.z5/.z8 via `Zmachine::step`/`handle_input`) and `ur-grue` (AGPL, stub/empty) and the empty `zvm-core` 0.100.0 WIP. `encrusted` was chosen for its MIT license, 80×24 dumb-terminal behaviour, and proven fixtures (`minizork.z3`, `czech.*`).
 
 ---
 
 ## Troubleshooting
 
 - **`library 'SDL2_ttf' not found` at link** — you need `brew install sdl2_ttf` (macOS) or `libsdl2-ttf-dev` (Linux). The repo ships `.cargo/config.toml` that adds `/opt/homebrew/lib` to the linker; if you installed SDL elsewhere, set `LIBRARY_PATH` and `PKG_CONFIG_PATH` accordingly.
-- **`dfrotz not found`** — `brew install frotz` (macOS) or `sudo apt install frotz`. The GUI checks `/opt/homebrew/bin/dfrotz`, `/usr/local/bin/dfrotz`, and `which dfrotz`. Override with a symlink or `PATH`.
 - **Blank/error screen** — you launched without a story and cancelled the picker. Use `cargo run -- --story /path/to/zork1.z3` or `cargo run -- --story assets/stories/zork1.z3` or press `F1` in-GUI.
 - **Font looks wrong / not VT323** — ensure `assets/fonts/VT323-Regular.ttf` exists (it is bundled). Delete it to test fallback.
 - **Window too big/small** — fixed at 1120×860 (bezel 48, pad 14, glass 1024×764). Resize is disabled (scales font instead). Edit `WINDOW_W/H` in `src/constants.rs` to re-tune.
 - **`--story` says not found** — the resolver checks the given path plus ancestors and exe-relative locations. If you pass a relative path it is resolved against cwd ancestors; prefer an absolute path if unsure.
+- **`version 0` or `unsupported Z-machine version`** — story file is missing, empty, or not a valid Z-code file. Ensure the file is a raw `.z3/.z5/.z8` (or a `.zip` containing one).
 
 ---
 
@@ -188,20 +190,21 @@ cargo build
 ./target/debug/zork-crt-gui --version
 ./target/debug/zork-crt-gui --story /nonexistent  # exits 1 with helpful message, no picker hang in CI
 cargo clippy -- -D clippy::pedantic
+cargo test
 ```
 
-GUI smoke test (requires display + dfrotz + story):
+GUI smoke test (requires display + story):
 
 ```bash
-echo -e "g\nquit\ny" | /opt/homebrew/bin/dfrotz -w 80 -h 24 -m -p /path/to/zork1.z3 | head -n 40
 cargo run -- --story /path/to/zork1.z3
+cargo run -- --story src/zmachine/fixtures/minizork.z3
 ```
 
 ---
 
 ## License
 
-- **Code** — MIT (see `LICENSE`). `src/crt_pi.rs` (Rust port of the crt-pi algorithm) is also MIT.
+- **Code** — MIT (see `LICENSE`). `src/zmachine/*` is vendored from [encrusted](https://github.com/demille/encrusted) (MIT) with local adaptations (80×24 header, `GuiUi` channel backend, `Send` trait, `paused_opcode`/`set_screen_size` helpers, zip support). `src/crt_pi.rs` (Rust port of the crt-pi algorithm) is also MIT.
 - **crt-pi shader** — `assets/shaders/crt-pi.glsl` (+ `.vert`/`.frag` split) is **GPL-2.0+**, Copyright © 2015-2016 davej, from [libretro/glsl-shaders](https://github.com/libretro/glsl-shaders). See `assets/shaders/LICENSE.crt-pi`. Verbatim redistribution must comply with GPL-2.0+.
 - **VT323 font** — SIL Open Font License 1.1 (`assets/fonts/OFL.txt`).
 - **Zork I story** — original Infocom copyright if you provide one; not bundled in this repo. Use only stories you have rights to.
