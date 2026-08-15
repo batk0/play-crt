@@ -122,6 +122,44 @@ jobs:
         if: matrix.runner == 'windows-2022'
         run: cmake --version || choco install cmake --yes
         shell: pwsh
+      # sdl2-sys `bundled` only vendors SDL2 core, not SDL_ttf. The `sdl2` crate with
+      # `features = ["ttf"]` still needs SDL2_ttf.lib at link time. Provide it via
+      # prebuilt VC develop libs and expose to rustc via LIB/RUSTFLAGS.
+      - name: Install SDL2_ttf for Windows (bundled SDL2 + external SDL_ttf)
+        if: matrix.runner == 'windows-2022'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $url = "https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-devel-2.22.0-VC.zip"
+          $zip = "$env:RUNNER_TEMP\SDL2_ttf.zip"
+          Write-Host "Downloading SDL2_ttf from $url"
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          } catch {
+            # Fallback to libsdl.org mirror
+            $url2 = "https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-2.22.0-VC.zip"
+            Write-Host "Fallback to $url2"
+            Invoke-WebRequest -Uri $url2 -OutFile $zip -UseBasicParsing
+          }
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP -Force
+          $ttfDir = Get-ChildItem $env:RUNNER_TEMP -Directory -Filter "SDL2_ttf*" | Select-Object -First 1
+          if (-not $ttfDir) { throw "Failed to locate SDL2_ttf dir in $env:RUNNER_TEMP" }
+          $libDir = Join-Path $ttfDir.FullName "lib\x64"
+          Write-Host "SDL2_ttf libDir: $libDir"
+          Get-ChildItem $libDir | Format-Table Name, Length
+          $existingLib = $env:LIB
+          $newLib = "$libDir;$existingLib"
+          "LIB=$newLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $existingFlags = $env:RUSTFLAGS
+          $newFlags = if ($existingFlags) { "$existingFlags -L $libDir" } else { "-L $libDir" }
+          "RUSTFLAGS=$newFlags" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Set LIB and RUSTFLAGS for SDL2_ttf"
+          # Copy DLLs to Windows System32 for runtime (best effort)
+          $dll = Join-Path $libDir "SDL2_ttf.dll"
+          if (Test-Path $dll) {
+            Copy-Item $dll -Destination "$env:RUNNER_TEMP\SDL2_ttf.dll" -Force
+            try { Copy-Item $dll -Destination "C:\Windows\System32\SDL2_ttf.dll" -Force -ErrorAction SilentlyContinue } catch {}
+          }
       - name: Build artifacts
         run: |
           dist build ${{ needs.plan.outputs.tag-flag }} --print=linkage --output-format=json ${{ matrix.dist_args }} > dist-manifest.json

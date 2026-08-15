@@ -1,6 +1,6 @@
 [package]
 name = "play-crt"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-lottes PUBLIC DOMAIN shader, bottom switches)"
 license = "MIT"
@@ -54,7 +54,7 @@ ci = ["github"]
 installers = ["shell", "powershell", "homebrew"]
 tap = "batk0/homebrew-tap"
 targets = ["x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
-include = ["assets/fonts/VT323-Regular.ttf", "assets/fonts/OFL.txt", "assets/shaders/crt-lottes.*", "assets/shaders/LICENSE", "README.md", "LICENSE"]
+include = ["assets/fonts/VT323-Regular.ttf", "assets/fonts/OFL.txt", "assets/shaders/crt-lottes.glsl", "assets/shaders/crt-lottes.vert", "assets/shaders/crt-lottes.frag", "assets/shaders/LICENSE", "README.md", "LICENSE"]
 publish-jobs = ["homebrew"]
 allow-dirty = ["ci"]
 # System dependencies for SDL2 (Linux/macOS need system libs; Windows uses bundled via sdl2-sys+cmake)
