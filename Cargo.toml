@@ -1,6 +1,6 @@
 [package]
 name = "play-crt"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-lottes PUBLIC DOMAIN shader, bottom switches)"
 license = "MIT"
@@ -67,10 +67,16 @@ pkg-config = "*"
 sdl2 = "*"
 sdl2_ttf = "*"
 
-# Windows bundled build vendors SDL2 via sdl2-sys/bundled and requires cmake (preinstalled on windows-2022)
+# Windows: sdl2-sys `bundled` builds SDL2 core from source (needs cmake, preinstalled
+# on windows-2022) but `sdl2` with `features = ["ttf"]` still needs external libs
+# at MSVC link time. v0.1.4 failed with LINK LNK1181 cannot open SDL2.lib because
+# only SDL2_ttf was vendored. release.yml now downloads BOTH SDL2-devel-2.30.8-VC.zip
+# and SDL2_ttf-devel-2.22.0-VC.zip to D:\a\_temp\ (RUNNER_TEMP) and sets LIB/RUSTFLAGS
+# to both lib\x64 dirs + stages both DLLs. Keep cmake/bundled; external libs satisfy
+# linking regardless of bundled static build.
 [workspace.metadata.dist.dependencies.chocolatey]
 cmake = "*"
 
-# Ensure Windows builds use bundled SDL2 (no separate SDL2 install required)
+# Windows builds use bundled SDL2 core; external SDL2+SDL2_ttf libs are provided in CI as fallback for linking
 [workspace.metadata.dist.overrides.x86_64-pc-windows-msvc]
 features = ["bundled"]
