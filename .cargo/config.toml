@@ -8,5 +8,16 @@ rustflags = [
   "-L", "/usr/local/opt/sdl2_ttf/lib",
 ]
 
+# Windows static MSVC note:
+# The dynamic Windows artifact (release.yml / cargo-dist) uses the default
+# dynamic CRT and links SDL2 via bundled cmake + external VC libs.
+# The static artifact (.github/workflows/windows-static.yml) opts into
+# fully static linking via RUSTFLAGS="-C target-feature=+crt-static" set
+# in CI. Do NOT set +crt-static here globally — it would make every
+# local Windows build static and break the dynamic job.
+# Per-target static example (uncomment locally if you want a static dev build):
+# [target.x86_64-pc-windows-msvc]
+# rustflags = ["-C", "target-feature=+crt-static"]
+
 [env]
 PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/sdl2_ttf/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/opt/sdl2_ttf/lib/pkgconfig"

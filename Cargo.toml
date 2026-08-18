@@ -18,6 +18,13 @@ path = "src/main.rs"
 
 [features]
 bundled = ["sdl2/bundled"]
+# Static MSVC build: SDL2 core via sdl2-sys `bundled` cmake static (SDL_SHARED=OFF/SDL_STATIC=ON)
+# + CRT static (+crt-static). SDL2_ttf is NOT handled by sdl2-sys when bundled+static-link
+# (see sdl2-sys build.rs: static-link skips SDL2_ttf when bundled). In
+# .github/workflows/windows-static.yml this is worked around via vcpkg
+# x64-windows-static triplet + RUSTFLAGS `-l static=SDL2_ttf -l static=freetype …`.
+# Keep `bundled` for the dynamic Windows job; `static` = fully static attempt.
+static = ["sdl2/bundled", "sdl2/static-link"]
 default = []
 
 [dependencies]
