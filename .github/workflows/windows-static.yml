@@ -140,12 +140,34 @@ jobs:
             "VCPKG_DEFAULT_TRIPLET=$installedTriplet" | Out-File -FilePath $env:GITHUB_ENV -Append
             # SDL2_ttf static freetype/harfbuzz libs the linker will need — appended to RUSTFLAGS
             # MSVC link libs are order-insensitive but we list likely required ones.
-            $extraLibs = @(
-              "SDL2_ttf", "freetype", "harfbuzz", "graphite2",
-              "libpng16", "zlib", "bz2", "brotlicommon", "brotlidec"
+            # vcpkg static triplet installs use varying .lib basenames (e.g. zlib -> zs.lib or z.lib,
+            # bzip2 -> bz2.lib, libpng -> libpng16.lib). Detect actual filenames to avoid
+            # "could not find native static library `zlib`" which pollutes RUSTFLAGS for every crate
+            # (including pure-Rust crates like stable_deref_trait) and breaks the build globally.
+            function Get-LibName($dir, $candidates) { foreach($c in $candidates) { if(Test-Path "$dir\$c.lib") { return $c } } return $null }
+            $libCandidates = @(
+              @("SDL2_ttf"),
+              @("freetype"),
+              @("harfbuzz"),
+              @("graphite2"),
+              @("libpng16","libpng","png16","png"),
+              @("zlib","z","zs"),
+              @("bz2","bzip2"),
+              @("brotlicommon"),
+              @("brotlidec")
             )
-            $libFlags = ($extraLibs | ForEach-Object { "-l static=$_" }) -join " "
-            $rustflagsAdd = "-L $libDir $libFlags"
+            $extraLibs = @()
+            foreach($cands in $libCandidates) {
+              $name = Get-LibName $libDir $cands
+              if($name) { $extraLibs += $name; Write-Host "Found lib: $name.lib for candidates $($cands -join ',')" } else { Write-Warning "lib not found for candidates $($cands -join ',') in $libDir — skipping" }
+            }
+            if($extraLibs.Count -eq 0) {
+              Write-Warning "No extra static libs found in $libDir — RUSTFLAGS will only contain -L"
+              $rustflagsAdd = "-L $libDir"
+            } else {
+              $libFlags = ($extraLibs | ForEach-Object { "-l static=$_" }) -join " "
+              $rustflagsAdd = "-L $libDir $libFlags"
+            }
             # Add Windows system libs already emitted by sdl2-sys static path,
             # plus extra freetype deps if needed (best-effort, ignored if not found).
             Write-Host "Appending to RUSTFLAGS: $rustflagsAdd"
@@ -168,8 +190,8 @@ jobs:
           # Fallback for diagnostics: if static fails due to TTF, the log will show missing symbols.
           cargo build --release --features static --target x86_64-pc-windows-msvc --verbose
           if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Static build failed — retrying with bundled,static-link explicit features for log clarity"
-            cargo build --release --features bundled,static-link --target x86_64-pc-windows-msvc --verbose
+            Write-Warning "Static build failed — retrying with bundled explicit feature for log clarity (static = bundled+static-link)"
+            cargo build --release --features bundled --target x86_64-pc-windows-msvc --verbose
             throw "cargo build failed even after explicit features"
           }
           $exe = "target\x86_64-pc-windows-msvc\release\play-crt.exe"
