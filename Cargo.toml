@@ -1,6 +1,6 @@
 [package]
 name = "play-crt"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-lottes PUBLIC DOMAIN shader, bottom switches)"
 license = "MIT"
@@ -18,12 +18,12 @@ path = "src/main.rs"
 
 [features]
 bundled = ["sdl2/bundled"]
-# Static MSVC build: SDL2 core via sdl2-sys `bundled` cmake static (SDL_SHARED=OFF/SDL_STATIC=ON)
+# Static MSVC single-exe: SDL2 core via sdl2-sys `bundled` cmake static (SDL_SHARED=OFF/SDL_STATIC=ON)
 # + CRT static (+crt-static). SDL2_ttf is NOT handled by sdl2-sys when bundled+static-link
-# (see sdl2-sys build.rs: static-link skips SDL2_ttf when bundled). In
-# .github/workflows/windows-static.yml this is worked around via vcpkg
-# x64-windows-static triplet + RUSTFLAGS `-l static=SDL2_ttf -l static=freetype …`.
-# Keep `bundled` for the dynamic Windows job; `static` = fully static attempt.
+# (see sdl2-sys build.rs: static-link skips SDL2_ttf when bundled). Worked around via vcpkg
+# x64-windows-static triplet + RUSTFLAGS `-l static=SDL2_ttf -l static=freetype …` in
+# .github/workflows/release.yml (Windows job). `bundled` remains for local dynamic builds;
+# `static` = fully static single exe (6.2 MiB, no DLLs).
 static = ["sdl2/bundled", "sdl2/static-link"]
 default = []
 
@@ -64,7 +64,7 @@ targets = ["aarch64-unknown-linux-gnu", "x86_64-unknown-linux-gnu", "aarch64-app
 include = ["assets/fonts/VT323-Regular.ttf", "assets/fonts/OFL.txt", "assets/shaders/crt-lottes.glsl", "assets/shaders/crt-lottes.vert", "assets/shaders/crt-lottes.frag", "assets/shaders/LICENSE", "README.md", "LICENSE"]
 publish-jobs = ["homebrew"]
 allow-dirty = ["ci"]
-# System dependencies for SDL2 (Linux/macOS need system libs; Windows uses bundled via sdl2-sys+cmake)
+# System dependencies for SDL2 (Linux/macOS need system libs; Windows uses bundled+static via sdl2-sys+cmake+vcpkg)
 # aarch64 Linux cross on x86_64 runner needs gcc-aarch64 cross toolchain + libc
 [workspace.metadata.dist.dependencies.apt]
 libsdl2-dev = "*"
@@ -78,16 +78,12 @@ libc6-dev-arm64-cross = "*"
 sdl2 = "*"
 sdl2_ttf = "*"
 
-# Windows: sdl2-sys `bundled` builds SDL2 core from source (needs cmake, preinstalled
-# on windows-2022) but `sdl2` with `features = ["ttf"]` still needs external libs
-# at MSVC link time. v0.1.4 failed with LINK LNK1181 cannot open SDL2.lib because
-# only SDL2_ttf was vendored. release.yml now downloads BOTH SDL2-devel-2.30.8-VC.zip
-# and SDL2_ttf-devel-2.22.0-VC.zip to D:\a\_temp\ (RUNNER_TEMP) and sets LIB/RUSTFLAGS
-# to both lib\x64 dirs + stages both DLLs. Keep cmake/bundled; external libs satisfy
-# linking regardless of bundled static build.
+# Windows: bundled+static-link builds SDL2 core statically via cmake (SDL_STATIC=ON);
+# SDL2_ttf static deps come from vcpkg x64-windows-static (see release.yml Windows job).
 [workspace.metadata.dist.dependencies.chocolatey]
 cmake = "*"
 
-# Windows builds use bundled SDL2 core; external SDL2+SDL2_ttf libs are provided in CI as fallback for linking
+# Windows: single static exe (no DLLs) — static = sdl2/bundled + sdl2/static-link (cmake SDL_STATIC=ON,
+# CRT +crt-static via RUSTFLAGS). SDL2_ttf static deps via vcpkg x64-windows-static in release.yml.
 [workspace.metadata.dist.overrides.x86_64-pc-windows-msvc]
-features = ["bundled"]
+features = ["static"]

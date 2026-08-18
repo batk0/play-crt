@@ -164,70 +164,79 @@ jobs:
         if: matrix.runner == 'windows-2022'
         run: cmake --version || choco install cmake --yes
         shell: pwsh
-      # sdl2-sys `bundled` vendors SDL2 core but Windows MSVC linking still
-      # requires SDL2.lib + SDL2_ttf.lib at link time (v0.1.4 failed with
-      # LINK LNK1181: cannot open input file 'SDL2.lib' because
-      # only SDL2_ttf was vendored). Provide BOTH prebuilt VC libs and expose
-      # via LIB/RUSTFLAGS so `sdl2` with `features = ["ttf"]` links reliably
-      # regardless of bundled/static vs external. Extract to D:\a\_temp\
-      # ($env:RUNNER_TEMP) and stage both DLLs for runtime.
-      - name: Install SDL2 and SDL2_ttf for Windows (external libs for linking)
+      # Windows static single-exe: sdl2-sys `bundled` + `static-link` builds SDL2 core
+      # statically (cmake SDL_STATIC=ON). SDL2_ttf is NOT handled by sdl2-sys when
+      # bundled+static-link (upstream skips it), so provide static libs via vcpkg
+      # x64-windows-static triplet + CRT static (+crt-static). No DLLs produced.
+      - name: Install SDL2 / SDL2_ttf static libs via vcpkg (x64-windows-static)
         if: matrix.runner == 'windows-2022'
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          function Download-And-Extract {
-            param([string]$label, [string]$primaryUrl, [string]$fallbackUrl, [string]$zipName)
-            $zip = Join-Path $env:RUNNER_TEMP $zipName
-            Write-Host "Downloading $label from $primaryUrl"
-            try {
-              Invoke-WebRequest -Uri $primaryUrl -OutFile $zip -UseBasicParsing
-            } catch {
-              Write-Host "Primary failed for $label, fallback to $fallbackUrl : $_"
-              Invoke-WebRequest -Uri $fallbackUrl -OutFile $zip -UseBasicParsing
-            }
-            Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP -Force
-            return $zip
-          }
-          $sdlPrimary = "https://github.com/libsdl-org/SDL/releases/download/release-2.30.8/SDL2-devel-2.30.8-VC.zip"
-          $sdlFallback = "https://www.libsdl.org/release/SDL2-devel-2.30.8-VC.zip"
-          $ttfPrimary = "https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-devel-2.22.0-VC.zip"
-          $ttfFallback = "https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-2.22.0-VC.zip"
-          Download-And-Extract -label "SDL2" -primaryUrl $sdlPrimary -fallbackUrl $sdlFallback -zipName "SDL2.zip" | Out-Null
-          Download-And-Extract -label "SDL2_ttf" -primaryUrl $ttfPrimary -fallbackUrl $ttfFallback -zipName "SDL2_ttf.zip" | Out-Null
-          # Locate extracted dirs (SDL2 must not match SDL2_ttf)
-          $sdlDir = Get-ChildItem $env:RUNNER_TEMP -Directory | Where-Object { $_.Name -like "SDL2-*" -and $_.Name -notlike "SDL2_ttf*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          $ttfDir = Get-ChildItem $env:RUNNER_TEMP -Directory -Filter "SDL2_ttf*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $sdlDir) { throw "Failed to locate SDL2 dir in $env:RUNNER_TEMP" }
-          if (-not $ttfDir) { throw "Failed to locate SDL2_ttf dir in $env:RUNNER_TEMP" }
-          $sdlLib = Join-Path $sdlDir.FullName "lib\x64"
-          $ttfLib = Join-Path $ttfDir.FullName "lib\x64"
-          Write-Host "SDL2 libDir: $sdlLib"
-          Write-Host "SDL2_ttf libDir: $ttfLib"
-          Get-ChildItem $sdlLib | Format-Table Name, Length
-          Get-ChildItem $ttfLib | Format-Table Name, Length
-          if (-not (Test-Path (Join-Path $sdlLib "SDL2.lib"))) { throw "SDL2.lib not found in $sdlLib" }
-          if (-not (Test-Path (Join-Path $ttfLib "SDL2_ttf.lib"))) { throw "SDL2_ttf.lib not found in $ttfLib" }
-          $existingLib = $env:LIB
-          $newLib = "$sdlLib;$ttfLib;$existingLib"
-          "LIB=$newLib" | Out-File -FilePath $env:GITHUB_ENV -Append
-          $existingFlags = $env:RUSTFLAGS
-          $flagAdd = "-L $sdlLib -L $ttfLib"
-          $newFlags = if ($existingFlags) { "$existingFlags $flagAdd" } else { $flagAdd }
-          "RUSTFLAGS=$newFlags" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Host "Set LIB=$newLib"
-          Write-Host "Set RUSTFLAGS=$newFlags"
-          # Stage both DLLs for runtime (best effort) — copy to RUNNER_TEMP and System32
-          foreach ($pair in @(@($sdlLib, "SDL2.dll"), @($ttfLib, "SDL2_ttf.dll"))) {
-            $dll = Join-Path $pair[0] $pair[1]
-            if (Test-Path $dll) {
-              Copy-Item $dll -Destination (Join-Path $env:RUNNER_TEMP $pair[1]) -Force
-              try { Copy-Item $dll -Destination "C:\Windows\System32\$($pair[1])" -Force -ErrorAction SilentlyContinue } catch {}
-              Write-Host "Staged $($pair[1])"
+          # Resolve vcpkg root (preinstalled on windows-2022)
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = "C:\vcpkg" }
+          Write-Host "VCPKG root: $vcpkgRoot"
+          $vcpkg = Join-Path $vcpkgRoot "vcpkg.exe"
+          if (-not (Test-Path $vcpkg)) { throw "vcpkg.exe not found at $vcpkg — required for static SDL2_ttf" }
+          & $vcpkg version
+          # Prefer CRT-static triplet; fallback to static-md if not available
+          $triplets = @("x64-windows-static", "x64-windows-static-md")
+          $installedTriplet = $null
+          foreach ($tri in $triplets) {
+            Write-Host "`n=== Trying vcpkg install sdl2 sdl2-ttf freetype harfbuzz:$tri ==="
+            & $vcpkg install sdl2:$tri sdl2-ttf:$tri freetype:$tri harfbuzz:$tri --recurse 2>&1 | Tee-Object -Variable out
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "vcpkg install succeeded with triplet $tri"
+              $installedTriplet = $tri
+              break
             } else {
-              Write-Warning "DLL not found: $dll"
+              Write-Warning "vcpkg install failed for $tri, trying next"
             }
           }
+          if (-not $installedTriplet) { throw "All vcpkg triplet attempts failed — cannot build static Windows exe" }
+          Write-Host "Installing auxiliary static deps for $installedTriplet (best-effort)"
+          & $vcpkg install libpng:$installedTriplet zlib:$installedTriplet bzip2:$installedTriplet brotli:$installedTriplet graphite2:$installedTriplet 2>&1 | Out-Null
+          $installed = Join-Path $vcpkgRoot "installed\$installedTriplet"
+          $libDir = Join-Path $installed "lib"
+          $includeDir = Join-Path $installed "include"
+          Write-Host "vcpkg installed dir: $installed"
+          Write-Host "libDir: $libDir"
+          if (Test-Path $libDir) { Get-ChildItem $libDir -Filter "*.lib" | Select-Object Name, Length | Format-Table -AutoSize }
+          # Export for downstream crates that probe vcpkg
+          "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VCPKG_DEFAULT_TRIPLET=$installedTriplet" | Out-File -FilePath $env:GITHUB_ENV -Append
+          # Detect actual static lib filenames (vcpkg uses varying names: zlib -> zlib.lib/z.lib/zs.lib etc.)
+          function Get-LibName($dir, $candidates) { foreach($c in $candidates) { if(Test-Path "$dir\$c.lib") { return $c } } return $null }
+          $libCandidates = @(
+            @("SDL2_ttf"),
+            @("freetype"),
+            @("harfbuzz"),
+            @("graphite2"),
+            @("libpng16","libpng","png16","png"),
+            @("zlib","z","zs"),
+            @("bz2","bzip2"),
+            @("brotlicommon"),
+            @("brotlidec")
+          )
+          $extraLibs = @()
+          foreach($cands in $libCandidates) {
+            $name = Get-LibName $libDir $cands
+            if($name) { $extraLibs += $name; Write-Host "Found lib: $name.lib for candidates $($cands -join ',')" } else { Write-Warning "lib not found for candidates $($cands -join ',') in $libDir — skipping" }
+          }
+          if($extraLibs.Count -eq 0) {
+            Write-Warning "No extra static libs found in $libDir — RUSTFLAGS will only contain -L and +crt-static"
+            $rustflagsAdd = "-C target-feature=+crt-static -L $libDir"
+          } else {
+            $libFlags = ($extraLibs | ForEach-Object { "-l static=$_" }) -join " "
+            $rustflagsAdd = "-C target-feature=+crt-static -L $libDir $libFlags"
+          }
+          Write-Host "Appending to RUSTFLAGS: $rustflagsAdd"
+          $existing = $env:RUSTFLAGS
+          $newFlags = if ($existing) { "$existing $rustflagsAdd" } else { $rustflagsAdd }
+          "RUSTFLAGS=$newFlags" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "RUSTFLAGS now: $newFlags"
+          Write-Host "Static Windows libs ready — no DLL staging (single exe)"
       - name: Build artifacts
         run: |
           # Actually do builds and make zips and whatnot
