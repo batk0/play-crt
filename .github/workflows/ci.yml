@@ -192,18 +192,23 @@ jobs:
             $name = Get-LibName $libDir $cands
             if($name) { $extraLibs += $name; Write-Host "Found lib: $name.lib for candidates $($cands -join ',')" } else { Write-Warning "lib not found for candidates $($cands -join ',') in $libDir — skipping" }
           }
+          # Windows system libs required for static SDL2 (sdl2 crate docs: https://github.com/Rust-SDL2/rust-sdl2#requirements)
+          # Fixes LNK1120 192 unresolved externals: SetupDiEnumDeviceInfo->setupapi, OpenClipboard->user32,
+          # CreateCompatibleDC->gdi32, waveOutGetNumDevs->winmm, Imm*->imm32, VerQueryValue->version,
+          # SH*->shell32, Co*->ole32/oleaut32/uuid, Reg*->advapi32, CM_*->cfgmgr32
+          $systemLibs = "-l dylib=setupapi -l dylib=user32 -l dylib=gdi32 -l dylib=winmm -l dylib=imm32 -l dylib=version -l dylib=shell32 -l dylib=ole32 -l dylib=oleaut32 -l dylib=advapi32 -l dylib=uuid -l dylib=cfgmgr32"
           if($extraLibs.Count -eq 0) {
-            $rustflagsAdd = "-C target-feature=+crt-static -L $libDir"
+            $rustflagsAdd = "-C target-feature=+crt-static -L $libDir $systemLibs"
           } else {
             $libFlags = ($extraLibs | ForEach-Object { "-l static=$_" }) -join " "
-            $rustflagsAdd = "-C target-feature=+crt-static -L $libDir $libFlags"
+            $rustflagsAdd = "-C target-feature=+crt-static -L $libDir $libFlags $systemLibs"
           }
           Write-Host "Appending to RUSTFLAGS: $rustflagsAdd"
           $existing = $env:RUSTFLAGS
           $newFlags = if ($existing) { "$existing $rustflagsAdd" } else { $rustflagsAdd }
           "RUSTFLAGS=$newFlags" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Host "RUSTFLAGS now: $newFlags"
-          Write-Host "Static Windows libs ready — no DLLs (single exe)"
+          Write-Host "Static Windows libs ready — no DLLs (single exe, with Windows system libs)"
 
       - name: cargo dist build (--artifacts=local)
         shell: bash
