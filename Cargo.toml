@@ -1,6 +1,6 @@
 [package]
 name = "play-crt"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "PLAY-CRT — Z-machine + 95 BASIC games in a phosphor CRT (SDL2, 80x24 VT323, crt-lottes PUBLIC DOMAIN shader, bottom switches)"
 license = "MIT"
