@@ -19,5 +19,9 @@ rustflags = [
 # [target.x86_64-pc-windows-msvc]
 # rustflags = ["-C", "target-feature=+crt-static"]
 
+# Cross compilation for Linux ARM64 on x86_64 host (ubuntu-22.04) — cargo-dist aarch64-unknown-linux-gnu
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
 [env]
 PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig:/opt/homebrew/opt/sdl2_ttf/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/opt/sdl2_ttf/lib/pkgconfig"

@@ -49,8 +49,16 @@ jobs:
         shell: bash
         run: |
           curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.32.0/cargo-dist-installer.sh | sh
-      - name: cargo dist plan
+      - name: cargo dist plan (verify 5 targets: linux arm, linux x64, darwin arm, darwin x64, windows static)
         run: |
           ~/.cargo/bin/dist plan --output-format=json > dist-plan.json
           cat dist-plan.json
           jq -e '.ci.github.artifacts_matrix' dist-plan.json >/dev/null || (echo "dist plan missing artifacts_matrix"; exit 1)
+          echo "Verifying 5 targets (aarch64-unknown-linux-gnu, x86_64-unknown-linux-gnu, aarch64-apple-darwin, x86_64-apple-darwin, x86_64-pc-windows-msvc)..."
+          jq -e '.ci.github.artifacts_matrix.include | length == 5' dist-plan.json >/dev/null || (echo "expected 5 artifacts_matrix entries, got $(jq '.ci.github.artifacts_matrix.include | length' dist-plan.json)"; exit 1)
+          jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "aarch64-unknown-linux-gnu")' dist-plan.json >/dev/null || (echo "missing aarch64-unknown-linux-gnu target"; exit 1)
+          jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "x86_64-unknown-linux-gnu")' dist-plan.json >/dev/null || (echo "missing x86_64-unknown-linux-gnu target"; exit 1)
+          jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "aarch64-apple-darwin")' dist-plan.json >/dev/null || (echo "missing aarch64-apple-darwin target"; exit 1)
+          jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "x86_64-apple-darwin")' dist-plan.json >/dev/null || (echo "missing x86_64-apple-darwin target"; exit 1)
+          jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "x86_64-pc-windows-msvc")' dist-plan.json >/dev/null || (echo "missing x86_64-pc-windows-msvc target"; exit 1)
+          echo "All 5 targets present"

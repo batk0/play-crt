@@ -142,9 +142,21 @@ jobs:
       # Explicit SDL2 system dependencies (mirrors ci.yml and ensures linking succeeds
       # even if matrix.packages_install is stale). Keeps the exact commands from the
       # task spec so reviewers can verify at a glance.
+      # Supports 5 targets: aarch64-unknown-linux-gnu (ubuntu-22.04-arm native),
+      # x86_64-unknown-linux-gnu (ubuntu-22.04), two darwin, and one windows static.
       - name: Install SDL2 dependencies (Linux)
-        if: matrix.runner == 'ubuntu-22.04'
+        if: ${{ startsWith(matrix.runner, 'ubuntu-') }}
         run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev pkg-config
+      # aarch64 Linux cross on x86_64 runner (if ever used without ubuntu-22.04-arm)
+      # needs gcc-aarch64-linux-gnu; on native arm runner this is also harmless.
+      # matrix.packages_install already includes the cross toolchain via Cargo.toml
+      # apt deps, but keep explicit fallback for stale manifests / manual runs.
+      - name: Install cross toolchain for aarch64 Linux (if needed)
+        if: ${{ contains(matrix.targets, 'aarch64-unknown-linux-gnu') && startsWith(matrix.runner, 'ubuntu-') }}
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross || true
+      - name: Ensure Rust cross target for aarch64 Linux
+        if: ${{ contains(matrix.targets, 'aarch64-unknown-linux-gnu') }}
+        run: rustup target add aarch64-unknown-linux-gnu
       - name: Install SDL2 dependencies (macOS)
         if: contains(matrix.runner, 'macos')
         run: brew install sdl2 sdl2_ttf || brew upgrade sdl2 sdl2_ttf || true
