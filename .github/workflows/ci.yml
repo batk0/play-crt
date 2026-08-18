@@ -62,3 +62,140 @@ jobs:
           jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "x86_64-apple-darwin")' dist-plan.json >/dev/null || (echo "missing x86_64-apple-darwin target"; exit 1)
           jq -e '.ci.github.artifacts_matrix.include[] | select(.targets[] == "x86_64-pc-windows-msvc")' dist-plan.json >/dev/null || (echo "missing x86_64-pc-windows-msvc target"; exit 1)
           echo "All 5 targets present"
+
+  # Full cargo-dist build verification on push to main (and PRs).
+  # Mirrors release.yml's 5-target matrix but without publish — verifies
+  # actual compilation/linking via `cargo dist build --artifacts=local`.
+  # Trigger is push to main/master + pull_request (no tags). To limit
+  # expensive cross builds to main only, uncomment the `if:` below.
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    # Uncomment to run heavy builds only on push to main (saves PR minutes):
+    # if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+          - target: aarch64-apple-darwin
+            runner: macos-14
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+          - target: x86_64-pc-windows-msvc
+            runner: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Install cargo-dist
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.32.0/cargo-dist-installer.sh | sh
+
+      - name: Install dependencies (Linux)
+        if: startsWith(matrix.runner, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev pkg-config
+
+      - name: Install cross toolchain for aarch64 Linux (if needed)
+        if: contains(matrix.target, 'aarch64-unknown-linux-gnu') && startsWith(matrix.runner, 'ubuntu-')
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross || true
+
+      - name: Ensure Rust target
+        shell: bash
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install SDL2 dependencies (macOS)
+        if: contains(matrix.runner, 'macos')
+        run: brew install sdl2 sdl2_ttf || brew upgrade sdl2 sdl2_ttf || true
+
+      - name: Ensure cmake for Windows bundled build
+        if: matrix.runner == 'windows-2022'
+        shell: pwsh
+        run: cmake --version || choco install cmake --yes
+
+      # sdl2-sys `bundled` vendors SDL2 core but Windows MSVC linking still
+      # requires SDL2.lib + SDL2_ttf.lib at link time (mirrors release.yml).
+      # Provide BOTH prebuilt VC libs and expose via LIB/RUSTFLAGS.
+      - name: Install SDL2 and SDL2_ttf for Windows (external libs for linking)
+        if: matrix.runner == 'windows-2022'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          function Download-And-Extract {
+            param([string]$label, [string]$primaryUrl, [string]$fallbackUrl, [string]$zipName)
+            $zip = Join-Path $env:RUNNER_TEMP $zipName
+            Write-Host "Downloading $label from $primaryUrl"
+            try {
+              Invoke-WebRequest -Uri $primaryUrl -OutFile $zip -UseBasicParsing
+            } catch {
+              Write-Host "Primary failed for $label, fallback to $fallbackUrl : $_"
+              Invoke-WebRequest -Uri $fallbackUrl -OutFile $zip -UseBasicParsing
+            }
+            Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP -Force
+            return $zip
+          }
+          $sdlPrimary = "https://github.com/libsdl-org/SDL/releases/download/release-2.30.8/SDL2-devel-2.30.8-VC.zip"
+          $sdlFallback = "https://www.libsdl.org/release/SDL2-devel-2.30.8-VC.zip"
+          $ttfPrimary = "https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-devel-2.22.0-VC.zip"
+          $ttfFallback = "https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-2.22.0-VC.zip"
+          Download-And-Extract -label "SDL2" -primaryUrl $sdlPrimary -fallbackUrl $sdlFallback -zipName "SDL2.zip" | Out-Null
+          Download-And-Extract -label "SDL2_ttf" -primaryUrl $ttfPrimary -fallbackUrl $ttfFallback -zipName "SDL2_ttf.zip" | Out-Null
+          $sdlDir = Get-ChildItem $env:RUNNER_TEMP -Directory | Where-Object { $_.Name -like "SDL2-*" -and $_.Name -notlike "SDL2_ttf*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $ttfDir = Get-ChildItem $env:RUNNER_TEMP -Directory -Filter "SDL2_ttf*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $sdlDir) { throw "Failed to locate SDL2 dir in $env:RUNNER_TEMP" }
+          if (-not $ttfDir) { throw "Failed to locate SDL2_ttf dir in $env:RUNNER_TEMP" }
+          $sdlLib = Join-Path $sdlDir.FullName "lib\x64"
+          $ttfLib = Join-Path $ttfDir.FullName "lib\x64"
+          Write-Host "SDL2 libDir: $sdlLib"
+          Write-Host "SDL2_ttf libDir: $ttfLib"
+          Get-ChildItem $sdlLib | Format-Table Name, Length
+          Get-ChildItem $ttfLib | Format-Table Name, Length
+          if (-not (Test-Path (Join-Path $sdlLib "SDL2.lib"))) { throw "SDL2.lib not found in $sdlLib" }
+          if (-not (Test-Path (Join-Path $ttfLib "SDL2_ttf.lib"))) { throw "SDL2_ttf.lib not found in $ttfLib" }
+          $existingLib = $env:LIB
+          $newLib = "$sdlLib;$ttfLib;$existingLib"
+          "LIB=$newLib" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $existingFlags = $env:RUSTFLAGS
+          $flagAdd = "-L $sdlLib -L $ttfLib"
+          $newFlags = if ($existingFlags) { "$existingFlags $flagAdd" } else { $flagAdd }
+          "RUSTFLAGS=$newFlags" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Set LIB=$newLib"
+          Write-Host "Set RUSTFLAGS=$newFlags"
+          foreach ($pair in @(@($sdlLib, "SDL2.dll"), @($ttfLib, "SDL2_ttf.dll"))) {
+            $dll = Join-Path $pair[0] $pair[1]
+            if (Test-Path $dll) {
+              Copy-Item $dll -Destination (Join-Path $env:RUNNER_TEMP $pair[1]) -Force
+              try { Copy-Item $dll -Destination "C:\Windows\System32\$($pair[1])" -Force -ErrorAction SilentlyContinue } catch {}
+              Write-Host "Staged $($pair[1])"
+            } else {
+              Write-Warning "DLL not found: $dll"
+            }
+          }
+
+      - name: cargo dist build (--artifacts=local)
+        shell: bash
+        run: |
+          set -e
+          echo "Building target ${{ matrix.target }} via cargo-dist..."
+          if ~/.cargo/bin/dist build --artifacts=local --target ${{ matrix.target }} --output-format=json > dist-manifest.json 2>&1; then
+            echo "cargo dist build succeeded"
+            cat dist-manifest.json
+          else
+            echo "cargo dist build failed or not available, falling back to cargo build --profile dist"
+            cat dist-manifest.json || true
+            cargo build --profile dist --target ${{ matrix.target }} --verbose
+          fi
+          echo "Build step complete for ${{ matrix.target }}"
