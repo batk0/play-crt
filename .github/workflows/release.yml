@@ -207,8 +207,21 @@ jobs:
           "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
           "VCPKG_DEFAULT_TRIPLET=$installedTriplet" | Out-File -FilePath $env:GITHUB_ENV -Append
           # Detect actual static lib filenames (vcpkg uses varying names: zlib -> zlib.lib/z.lib/zs.lib etc.)
+          # Fix SDL2 static lib naming: vcpkg x64-windows-static installs SDL2-static.lib (27 MB)
+          # but linker probes for SDL2.lib. Copy if needed and ensure RUSTFLAGS links SDL2.
+          $sdl2Lib = Join-Path $libDir "SDL2.lib"
+          $sdl2StaticLib = Join-Path $libDir "SDL2-static.lib"
+          if ((Test-Path $sdl2StaticLib) -and -not (Test-Path $sdl2Lib)) {
+            Write-Host "Copying SDL2-static.lib -> SDL2.lib for linker compatibility (27 MB static SDL2)"
+            Copy-Item $sdl2StaticLib $sdl2Lib
+          }
+          $sdl2MainLib = Join-Path $libDir "SDL2main.lib"
+          if (Test-Path $sdl2MainLib) { Write-Host "Found SDL2main.lib" }
+          if (Test-Path $libDir) { Get-ChildItem $libDir -Filter "SDL2*.lib" | Select-Object Name, Length | Format-Table -AutoSize }
           function Get-LibName($dir, $candidates) { foreach($c in $candidates) { if(Test-Path "$dir\$c.lib") { return $c } } return $null }
           $libCandidates = @(
+            @("SDL2","SDL2-static"),
+            @("SDL2main"),
             @("SDL2_ttf"),
             @("freetype"),
             @("harfbuzz"),
