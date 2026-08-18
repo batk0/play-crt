@@ -49,7 +49,7 @@ jobs:
         shell: bash
         run: |
           curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.32.0/cargo-dist-installer.sh | sh
-      - name: cargo dist plan (verify 5 targets: linux arm, linux x64, darwin arm, darwin x64, windows static)
+      - name: "cargo dist plan (verify 5 targets: linux arm, linux x64, darwin arm, darwin x64, windows static)"
         run: |
           ~/.cargo/bin/dist plan --output-format=json > dist-plan.json
           cat dist-plan.json
