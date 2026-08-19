@@ -23,7 +23,7 @@ use crate::constants::{
     BEZEL_COLOR, BEZEL_HILITE, BEZEL_INNER_RADIUS, BEZEL_OUTER_RADIUS, BEZEL_SHADOW,
     GLASS_BG, GLASS_INNER_BEVEL, GLASS_RADIUS, ROWS,
 };
-use crate::controls::{bottom_bar_layout, ControlState, PhosphorColor};
+use crate::controls::{bottom_bar_layout, ControlState, PhosphorColor, SoundPalette};
 use crate::crt_pi;
 use crate::grid::Grid;
 
@@ -612,6 +612,108 @@ pub fn draw_bottom_controls(
         }
     };
 
+    // Baud button — single cycle button showing current rate
+    {
+        let baud_hover = hover_hit == Some(crate::controls::ControlHit::Baud);
+        let track = layout.baud.track;
+        let bg = if baud_hover {
+            Color::RGB(0x3a, 0x3a, 0x36)
+        } else {
+            Color::RGB(0x2a, 0x2a, 0x26)
+        };
+        fill_rounded_rect(
+            canvas,
+            track.x(),
+            track.y(),
+            track.width() as i32,
+            track.height() as i32,
+            6,
+            bg,
+        );
+        canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
+        stroke_rounded_rect(
+            canvas,
+            track.x(),
+            track.y(),
+            track.width() as i32,
+            track.height() as i32,
+            6,
+            1,
+            Color::RGBA(0x6a, 0x6a, 0x62, 60),
+        );
+        canvas.set_blend_mode(sdl2::render::BlendMode::None);
+        // Selected indicator — small dot when not infinity, hollow when infinity?
+        let is_inf = state.baud_rate == crate::controls::BaudRate::Infinity;
+        let dot_col = if is_inf {
+            Color::RGB(0x66, 0xFF, 0x99)
+        } else {
+            Color::RGB(0x88, 0xCC, 0xFF)
+        };
+        let cx = track.x() + track.width() as i32 / 2;
+        let cy = track.y() + track.height() as i32 / 2;
+        fill_circle(canvas, cx, cy, 3, Color::RGBA(0x00, 0x00, 0x00, 120));
+        fill_circle(canvas, cx, cy, 2, dot_col);
+    }
+
+    // Sound 3-seg (TTY / MODEM / MIN)
+    {
+        let track = layout.sound.track;
+        fill_rounded_rect(
+            canvas,
+            track.x(),
+            track.y(),
+            track.width() as i32,
+            track.height() as i32,
+            6,
+            Color::RGB(0x1a, 0x1a, 0x18),
+        );
+        for (idx, seg) in layout.sound.segments.iter().enumerate() {
+            let palette = SoundPalette::from_index(idx);
+            let is_selected = state.sound_palette == palette;
+            let is_hovered = hover_hit == Some(crate::controls::ControlHit::Sound(palette));
+            let fill = if is_selected {
+                if is_hovered {
+                    Color::RGB(0x66, 0xFF, 0x99)
+                } else {
+                    Color::RGB(0x33, 0xFF, 0x66)
+                }
+            } else if is_hovered {
+                Color::RGB(0x4a, 0x4a, 0x44)
+            } else {
+                Color::RGB(0x2a, 0x2a, 0x26)
+            };
+            let inset = if is_selected { 1 } else { 2 };
+            let rx = seg.x() + inset;
+            let ry = seg.y() + inset;
+            let rw = seg.width() as i32 - inset * 2;
+            let rh = seg.height() as i32 - inset * 2;
+            if rw > 0 && rh > 0 {
+                let r = if idx == 0 || idx == 2 { 5 } else { 2 };
+                let radius = if is_selected { r } else { 3 };
+                fill_rounded_rect(canvas, rx, ry, rw, rh, radius, fill);
+            }
+            if is_selected {
+                let cx = seg.x() + seg.width() as i32 / 2;
+                let cy = seg.y() + seg.height() as i32 / 2;
+                fill_circle(canvas, cx, cy, 3, Color::RGBA(0x00, 0x00, 0x00, 120));
+                fill_circle(canvas, cx, cy, 2, Color::RGB(0x00, 0x00, 0x00));
+                fill_circle(canvas, cx, cy, 1, Color::RGB(0xFF, 0xFF, 0xFF));
+            }
+        }
+        canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
+        stroke_rounded_rect(
+            canvas,
+            track.x(),
+            track.y(),
+            track.width() as i32,
+            track.height() as i32,
+            6,
+            1,
+            Color::RGBA(0x6a, 0x6a, 0x62, 60),
+        );
+        canvas.set_blend_mode(sdl2::render::BlendMode::None);
+    }
+
     let curv_hover = hover_hit == Some(crate::controls::ControlHit::Curvature);
     let flicker_hover = hover_hit == Some(crate::controls::ControlHit::Flicker);
     let scan_hover = hover_hit == Some(crate::controls::ControlHit::Scanlines);
@@ -726,10 +828,12 @@ pub fn draw_bottom_control_labels(
 ) {
     let layout = bottom_bar_layout();
     let captions = [
+        (layout.baud.track.x() + layout.baud.track.width() as i32 / 2, "BAUD"),
         (layout.phosphor.track.x() + layout.phosphor.track.width() as i32 / 2, "PHOSPHOR"),
         (layout.curvature.track.x() + layout.curvature.track.width() as i32 / 2, "CURVE"),
         (layout.flicker.track.x() + layout.flicker.track.width() as i32 / 2, "FLICKER"),
         (layout.scanlines.track.x() + layout.scanlines.track.width() as i32 / 2, "SCAN"),
+        (layout.sound.track.x() + layout.sound.track.width() as i32 / 2, "SOUND"),
     ];
     for (cx, text) in captions {
         let surf = match font.render(text).blended(Color::RGBA(0xcc, 0xcc, 0xc0, 180)) {
@@ -788,6 +892,62 @@ pub fn draw_bottom_control_labels(
         let mut y = layout.phosphor.track.y() + layout.phosphor.track.height() as i32 + 4;
         // ensure at least 4px padding from the outer window edge (rounded corner)
         // and avoid overlapping the track itself
+        let max_y = window_h_i32() - h - 4;
+        if y > max_y {
+            y = max_y;
+        }
+        let dst = Rect::new(x, y, w as u32, h as u32);
+        let _ = canvas.copy(&tex, None, dst);
+    }
+    // Baud value under baud button
+    {
+        let text = state.baud_rate.label();
+        let col = Color::RGB(0x88, 0xCC, 0xFF);
+        let surf = match font.render(text).blended(col) {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+        let creator = canvas.texture_creator();
+        let mut tex = match creator.create_texture_from_surface(&surf) {
+            Ok(t) => t,
+            Err(_) => return,
+        };
+        tex.set_blend_mode(sdl2::render::BlendMode::Blend);
+        tex.set_alpha_mod(200);
+        let q = tex.query();
+        let w = (q.width as i32).min(50);
+        let h = (q.height as i32).min(10);
+        let cx = layout.baud.track.x() + layout.baud.track.width() as i32 / 2;
+        let x = cx - w / 2;
+        let mut y = layout.baud.track.y() + layout.baud.track.height() as i32 + 4;
+        let max_y = window_h_i32() - h - 4;
+        if y > max_y {
+            y = max_y;
+        }
+        let dst = Rect::new(x, y, w as u32, h as u32);
+        let _ = canvas.copy(&tex, None, dst);
+    }
+    // Sound palette under sound switch
+    {
+        let text = state.sound_palette.label();
+        let col = state.sound_palette_label_color();
+        let surf = match font.render(text).blended(col) {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+        let creator = canvas.texture_creator();
+        let mut tex = match creator.create_texture_from_surface(&surf) {
+            Ok(t) => t,
+            Err(_) => return,
+        };
+        tex.set_blend_mode(sdl2::render::BlendMode::Blend);
+        tex.set_alpha_mod(200);
+        let q = tex.query();
+        let w = (q.width as i32).min(60);
+        let h = (q.height as i32).min(10);
+        let cx = layout.sound.track.x() + layout.sound.track.width() as i32 / 2;
+        let x = cx - w / 2;
+        let mut y = layout.sound.track.y() + layout.sound.track.height() as i32 + 4;
         let max_y = window_h_i32() - h - 4;
         if y > max_y {
             y = max_y;
@@ -1016,6 +1176,8 @@ pub fn draw_grid_text_with_params(
         curvature_enabled: params.curvature_x != 0.0 || params.curvature_y != 0.0,
         flicker_enabled: true,
         scanlines_enabled: true,
+        baud_rate: crate::controls::BaudRate::default(),
+        sound_palette: crate::controls::SoundPalette::default(),
     };
     draw_grid_text_with_params_and_phosphor(
         canvas,

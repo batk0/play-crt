@@ -22,6 +22,7 @@ mod render;
 mod saves;
 mod sdl_setup;
 mod slot_menu;
+mod sound;
 mod zmachine;
 
 use app::AppState;
@@ -36,11 +37,32 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
     if cli.show_version {
-        println!("play-crt 0.1.0 (SDL2 CRT, pure Rust Z-machine — encrusted/MIT)");
+        println!("play-crt 0.1.11 (SDL2 CRT, pure Rust Z-machine — encrusted/MIT)");
         return Ok(());
     }
 
     let story_arg = cli.story_arg.clone();
+    // Apply CLI overrides for baud/sound (persisted for future runs)
+    if let Some(b) = &cli.baud {
+        if let Some(rate) = crate::controls::BaudRate::from_str(b) {
+            let mut state = crate::config::load();
+            state.baud = rate.as_config_str().to_string();
+            let _ = crate::config::save(&state);
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("baud override: {}", rate.label());
+            }
+        }
+    }
+    if let Some(s) = &cli.sound {
+        if let Some(pal) = crate::controls::SoundPalette::from_str(s) {
+            let mut state = crate::config::load();
+            state.sound = pal.as_config_str().to_string();
+            let _ = crate::config::save(&state);
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("sound override: {}", pal.label());
+            }
+        }
+    }
     if let Some((curv_x, curv_y)) = cli.curvature {
         let p = crt_pi::CrtPiParams {
             curvature_x: curv_x,
@@ -72,6 +94,7 @@ fn main() -> Result<(), String> {
     let _ = paths::ensure_layout();
 
     let (sdl, video, ttf) = sdl_setup::init_sdl()?;
+    let audio_subsys = sdl_setup::init_audio(&sdl);
     let mut canvas = sdl_setup::create_window(&video)?;
     // Optional PUBLIC DOMAIN CRT GL path (crt-lottes): compile the shader at startup and keep it alive.
     let _crt_gl: Option<crt_gl::CrtGl> = match crt_gl::CrtGl::try_new(&video, canvas.window()) {
@@ -111,7 +134,13 @@ fn main() -> Result<(), String> {
             Ok(s) => (Some(s), None),
             Err(e) => (None, Some(e)),
         };
-        let mut st = AppState::new(Some(sp.clone()), err, sess);
+        let mut st = AppState::new(Some(sp.clone()), err, sess).with_sound_engine(
+            if let Some(ref audio) = audio_subsys {
+                crate::sound::SoundEngine::new(audio)
+            } else {
+                crate::sound::SoundEngine::silent()
+            },
+        );
         st.seed_banner(&font_path, pt);
         if st.vm_error.is_some() {
             if let Some(e) = &st.vm_error {
@@ -122,7 +151,13 @@ fn main() -> Result<(), String> {
         st
     } else if story_arg.is_some() {
         // Should have errored above, but keep a visible error screen
-        let mut st = AppState::new(None, Some("story not found".to_string()), None);
+        let mut st = AppState::new(None, Some("story not found".to_string()), None).with_sound_engine(
+            if let Some(ref audio) = audio_subsys {
+                crate::sound::SoundEngine::new(audio)
+            } else {
+                crate::sound::SoundEngine::silent()
+            },
+        );
         st.seed_banner(&font_path, pt);
         st.grid.put_str("\n !! story file not found\n");
         st
@@ -130,7 +165,13 @@ fn main() -> Result<(), String> {
         // No --story → show pure-text menu, restoring last catalog kind if persisted
         let initial_kind = config::load_last_catalog().unwrap_or(menu::CatalogKind::ZMachine);
         let menu = MenuState::new_for_kind(initial_kind);
-        let st = AppState::new_with_menu(menu);
+        let st = AppState::new_with_menu(menu).with_sound_engine(
+            if let Some(ref audio) = audio_subsys {
+                crate::sound::SoundEngine::new(audio)
+            } else {
+                crate::sound::SoundEngine::silent()
+            },
+        );
         let _ = font_path;
         let _ = pt;
         if std::env::var("DEBUG").is_ok() {

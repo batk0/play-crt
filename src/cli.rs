@@ -6,6 +6,18 @@ pub struct Cli {
     pub show_help: bool,
     pub show_version: bool,
     pub curvature: Option<(f32, f32)>,
+    pub baud: Option<String>,
+    pub sound: Option<String>,
+}
+
+#[must_use]
+pub fn parse_baud(s: &str) -> Option<crate::controls::BaudRate> {
+    crate::controls::BaudRate::from_str(s)
+}
+
+#[must_use]
+pub fn parse_sound(s: &str) -> Option<crate::controls::SoundPalette> {
+    crate::controls::SoundPalette::from_str(s)
 }
 
 #[allow(clippy::many_single_char_names)]
@@ -38,6 +50,8 @@ pub fn parse_args() -> Result<Cli, String> {
     let mut show_help = false;
     let mut show_version = false;
     let mut curvature: Option<(f32, f32)> = None;
+    let mut baud: Option<String> = None;
+    let mut sound: Option<String> = None;
     let mut args = env::args().skip(1).peekable();
     while let Some(a) = args.next() {
         match a.as_str() {
@@ -64,6 +78,32 @@ pub fn parse_args() -> Result<Cli, String> {
                 let v = &s["--curvature=".len()..];
                 curvature = Some(parse_curvature(v)?);
             }
+            "--baud" => {
+                if let Some(v) = args.next() {
+                    let _ = parse_baud(&v).ok_or_else(|| format!("invalid --baud value: {v} (expected 110,300,1200,2400,9600,infinity)"))?;
+                    baud = Some(v);
+                } else {
+                    return Err("--baud requires a value (e.g. --baud 2400)".into());
+                }
+            }
+            s if s.starts_with("--baud=") => {
+                let v = &s["--baud=".len()..];
+                let _ = parse_baud(v).ok_or_else(|| format!("invalid --baud value: {v} (expected 110,300,1200,2400,9600,infinity)"))?;
+                baud = Some(v.to_string());
+            }
+            "--sound" => {
+                if let Some(v) = args.next() {
+                    let _ = parse_sound(&v).ok_or_else(|| format!("invalid --sound value: {v} (expected Teletype,ModemCrt,Minimal)"))?;
+                    sound = Some(v);
+                } else {
+                    return Err("--sound requires a value".into());
+                }
+            }
+            s if s.starts_with("--sound=") => {
+                let v = &s["--sound=".len()..];
+                let _ = parse_sound(v).ok_or_else(|| format!("invalid --sound value: {v} (expected Teletype,ModemCrt,Minimal)"))?;
+                sound = Some(v.to_string());
+            }
             s if s.starts_with('-') => {
                 return Err(format!("unknown flag: {s}"));
             }
@@ -79,6 +119,8 @@ pub fn parse_args() -> Result<Cli, String> {
         show_help,
         show_version,
         curvature,
+        baud,
+        sound,
     })
 }
 
@@ -95,9 +137,11 @@ USAGE:
 OPTIONS:
     --story <PATH>   Path to .z3/.z5/.z8/.zip story file (also accepts positional arg)
     --curvature <F[,F]>  Barrel curvature X,Y (0.0..1.0). Single value sets both axes.
-                         Default 0.20,0.20 (visible bulge). Use 0 to disable curvature
-                         (0.10 is a subtle but valid curvature, not disabled).
-                         Examples: --curvature 0.20  --curvature 0.15,0.20  --curvature=0
+                          Default 0.20,0.20 (visible bulge). Use 0 to disable curvature
+                          (0.10 is a subtle but valid curvature, not disabled).
+                          Examples: --curvature 0.20  --curvature 0.15,0.20  --curvature=0
+    --baud <RATE>    Baud rate for game output (110,300,1200,2400,9600,infinity). Default 2400.
+    --sound <PALETTE>  Sound palette: Teletype, ModemCrt, Minimal. Default Teletype.
     --help, -h       Show this help
     --version, -V    Show version
 

@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::controls::{ControlState, PhosphorColor};
+use crate::controls::{BaudRate, ControlState, PhosphorColor, SoundPalette};
 use crate::menu::CatalogKind;
 use crate::paths;
 
@@ -23,6 +23,14 @@ fn default_phosphor() -> String {
 
 fn default_true() -> bool {
     true
+}
+
+fn default_baud() -> String {
+    "2400".to_string()
+}
+
+fn default_sound() -> String {
+    "Teletype".to_string()
 }
 
 // ── Config struct ────────────────────────────────────────────────────────
@@ -37,6 +45,10 @@ pub struct Config {
     pub flicker: bool,
     #[serde(default = "default_true")]
     pub scanlines: bool,
+    #[serde(default = "default_baud")]
+    pub baud: String,
+    #[serde(default = "default_sound")]
+    pub sound: String,
     #[serde(default)]
     pub last_catalog: Option<String>,
 }
@@ -48,6 +60,8 @@ impl Default for Config {
             curvature: true,
             flicker: true,
             scanlines: true,
+            baud: default_baud(),
+            sound: default_sound(),
             last_catalog: None,
         }
     }
@@ -62,6 +76,8 @@ impl Config {
             curvature: state.curvature_enabled,
             flicker: state.flicker_enabled,
             scanlines: state.scanlines_enabled,
+            baud: state.baud_rate.as_config_str().to_string(),
+            sound: state.sound_palette.as_config_str().to_string(),
             last_catalog: None,
         }
     }
@@ -73,6 +89,8 @@ impl Config {
             curvature_enabled: self.curvature,
             flicker_enabled: self.flicker,
             scanlines_enabled: self.scanlines,
+            baud_rate: BaudRate::from_config_str(&self.baud),
+            sound_palette: SoundPalette::from_config_str(&self.sound),
         }
     }
 
@@ -82,6 +100,8 @@ impl Config {
         self.curvature = state.curvature_enabled;
         self.flicker = state.flicker_enabled;
         self.scanlines = state.scanlines_enabled;
+        self.baud = state.baud_rate.as_config_str().to_string();
+        self.sound = state.sound_palette.as_config_str().to_string();
     }
 }
 
@@ -214,10 +234,14 @@ mod tests {
         assert!(cfg.curvature);
         assert!(cfg.flicker);
         assert!(cfg.scanlines);
+        assert_eq!(cfg.baud, "2400");
+        assert_eq!(cfg.sound, "Teletype");
         assert!(cfg.last_catalog.is_none());
         let state = cfg.to_control_state();
         assert_eq!(state.phosphor, PhosphorColor::Green);
         assert!(state.curvature_enabled);
+        assert_eq!(state.baud_rate, crate::controls::BaudRate::Baud2400);
+        assert_eq!(state.sound_palette, crate::controls::SoundPalette::Teletype);
     }
 
     #[test]
@@ -266,12 +290,15 @@ mod tests {
     #[test]
     fn save_and_load_roundtrip() {
         with_tmp_dir(|| {
-            let mut cfg = Config::default();
-            cfg.phosphor = "Amber".to_string();
-            cfg.curvature = false;
-            cfg.flicker = false;
-            cfg.scanlines = true;
-            cfg.last_catalog = Some("basic".to_string());
+            let cfg = Config {
+                phosphor: "Amber".to_string(),
+                curvature: false,
+                flicker: false,
+                scanlines: true,
+                baud: "9600".to_string(),
+                sound: "Minimal".to_string(),
+                last_catalog: Some("basic".to_string()),
+            };
             save(&cfg).expect("save");
             // file exists
             assert!(config_path().exists());
@@ -284,25 +311,33 @@ mod tests {
             assert!(!state.curvature_enabled);
             assert!(!state.flicker_enabled);
             assert!(state.scanlines_enabled);
+            assert_eq!(state.baud_rate, crate::controls::BaudRate::Baud9600);
+            assert_eq!(state.sound_palette, crate::controls::SoundPalette::Minimal);
         });
     }
 
     #[test]
     fn save_control_state_preserves_last_catalog() {
         with_tmp_dir(|| {
-            let mut cfg = Config::default();
-            cfg.last_catalog = Some("basic".to_string());
+            let cfg = Config {
+                last_catalog: Some("basic".to_string()),
+                ..Default::default()
+            };
             save(&cfg).unwrap();
             let state = ControlState {
                 phosphor: PhosphorColor::White,
                 curvature_enabled: false,
                 flicker_enabled: true,
                 scanlines_enabled: false,
+                baud_rate: crate::controls::BaudRate::Baud300,
+                sound_palette: crate::controls::SoundPalette::ModemCrt,
             };
             save_control_state(&state).unwrap();
             let loaded = load();
             assert_eq!(loaded.phosphor, "White");
             assert!(!loaded.curvature);
+            assert_eq!(loaded.baud, "300");
+            assert_eq!(loaded.sound, "ModemCrt");
             assert_eq!(loaded.last_catalog, Some("basic".to_string()));
         });
     }
@@ -315,11 +350,15 @@ mod tests {
                 curvature_enabled: false,
                 flicker_enabled: false,
                 scanlines_enabled: true,
+                baud_rate: crate::controls::BaudRate::Baud1200,
+                sound_palette: crate::controls::SoundPalette::Minimal,
             };
             save_control_state(&state).unwrap();
             save_last_catalog(CatalogKind::Basic).unwrap();
             let loaded = load();
             assert_eq!(loaded.phosphor, "Amber");
+            assert_eq!(loaded.baud, "1200");
+            assert_eq!(loaded.sound, "Minimal");
             assert_eq!(loaded.last_catalog, Some("basic".to_string()));
             assert_eq!(load_last_catalog(), Some(CatalogKind::Basic));
             // switch back
@@ -344,6 +383,8 @@ mod tests {
             assert!(cfg2.curvature);
             assert!(cfg2.flicker);
             assert!(cfg2.scanlines);
+            assert_eq!(cfg2.baud, "2400");
+            assert_eq!(cfg2.sound, "Teletype");
         });
     }
 
@@ -355,6 +396,8 @@ mod tests {
                 curvature_enabled: true,
                 flicker_enabled: true,
                 scanlines_enabled: true,
+                baud_rate: crate::controls::BaudRate::Baud2400,
+                sound_palette: crate::controls::SoundPalette::Teletype,
             };
             save_control_state(&state).unwrap();
             save_control_state(&state).unwrap();

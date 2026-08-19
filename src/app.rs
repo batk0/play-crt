@@ -11,11 +11,12 @@ use sdl2::keyboard::Keycode;
 use crate::backend::{Backend, ZMachineSession};
 use crate::basic::BasicSession;
 use crate::config;
-use crate::controls::ControlState;
+use crate::controls::{BaudRate, ControlState, SoundPalette};
 use crate::grid::Grid;
 use crate::menu::{CatalogKind, GameKind, MenuEntry, MenuState};
 use crate::saves;
 use crate::slot_menu::SlotMenuState;
+use crate::sound::SoundEngine;
 
 pub struct AppState {
     pub(crate) grid: Grid,
@@ -32,6 +33,9 @@ pub struct AppState {
     pub(crate) mouse_pos: Option<(i32, i32)>,
     pub(crate) menu: Option<MenuState>,
     pub(crate) slot_menu: Option<SlotMenuState>,
+    pub(crate) baud_queue: VecDeque<char>,
+    pub(crate) next_char_due: Instant,
+    pub(crate) sound_engine: SoundEngine,
 }
 
 impl AppState {
@@ -56,6 +60,9 @@ impl AppState {
             mouse_pos: None,
             menu: None,
             slot_menu: None,
+            baud_queue: VecDeque::new(),
+            next_char_due: Instant::now(),
+            sound_engine: SoundEngine::silent(),
         }
     }
 
@@ -79,6 +86,9 @@ impl AppState {
             mouse_pos: None,
             menu: None,
             slot_menu: None,
+            baud_queue: VecDeque::new(),
+            next_char_due: Instant::now(),
+            sound_engine: SoundEngine::silent(),
         }
     }
 
@@ -98,11 +108,24 @@ impl AppState {
             mouse_pos: None,
             menu: Some(menu),
             slot_menu: None,
+            baud_queue: VecDeque::new(),
+            next_char_due: Instant::now(),
+            sound_engine: SoundEngine::silent(),
         };
         if let Some(m) = &s.menu {
             m.render_to_grid(&mut s.grid);
         }
         s
+    }
+
+    /// Attach a real audio engine (called from `main` after SDL audio init).
+    pub fn with_sound_engine(mut self, engine: SoundEngine) -> Self {
+        self.sound_engine = engine;
+        self
+    }
+
+    pub fn set_sound_engine(&mut self, engine: SoundEngine) {
+        self.sound_engine = engine;
     }
 
     // Backwards compat for code that accesses `session`.
@@ -559,6 +582,8 @@ impl AppState {
         self.vm_error = None;
         self.story_path = None;
         self.slot_menu = None;
+        self.baud_queue.clear();
+        self.next_char_due = Instant::now();
         let prev_kind = self
             .menu
             .as_ref()
@@ -568,6 +593,92 @@ impl AppState {
         menu.status_msg = Some(reason.to_string());
         menu.render_to_grid(&mut self.grid);
         self.menu = Some(menu);
+    }
+
+    // ── Baud + sound ───────────────────────────────────────────────────────
+
+    /// Effective baud rate (from `ControlState`).
+    #[must_use]
+    pub fn baud_rate(&self) -> BaudRate {
+        self.control_state.baud_rate
+    }
+
+    #[must_use]
+    pub fn sound_palette(&self) -> SoundPalette {
+        self.control_state.sound_palette
+    }
+
+    /// Persistently set baud rate (updates `ControlState` + `config.json`).
+    pub fn set_baud_rate(&mut self, rate: BaudRate) {
+        self.control_state.baud_rate = rate;
+        // Reset timing so next char isn't delayed excessively after switch
+        self.next_char_due = Instant::now();
+        let _ = config::save_control_state(&self.control_state);
+    }
+
+    /// Persistently set sound palette.
+    pub fn set_sound_palette(&mut self, palette: SoundPalette) {
+        self.control_state.sound_palette = palette;
+        let _ = config::save_control_state(&self.control_state);
+    }
+
+    /// Enqueue output for baud pacing. If `Infinity` or menu-active, writes immediately.
+    pub fn enqueue_output(&mut self, text: &str) {
+        if self.is_menu_active() || self.control_state.baud_rate == BaudRate::Infinity {
+            self.grid.put_str(text);
+            return;
+        }
+        let was_empty = self.baud_queue.is_empty();
+        for ch in text.chars() {
+            self.baud_queue.push_back(ch);
+        }
+        if was_empty {
+            self.next_char_due = Instant::now();
+        }
+    }
+
+    /// Drain queued chars respecting baud interval and triggering sound.
+    /// Called each frame from the event loop. Game-only, uninterruptible.
+    pub fn drain_baud_queue(&mut self) {
+        if self.is_menu_active() {
+            return;
+        }
+        if self.control_state.baud_rate == BaudRate::Infinity {
+            while let Some(ch) = self.baud_queue.pop_front() {
+                self.grid.put_char(ch);
+            }
+            return;
+        }
+        let Some(interval) = self.control_state.baud_rate.interval() else {
+            return;
+        };
+        let now = Instant::now();
+        // If queue empty, nothing to do
+        if self.baud_queue.is_empty() {
+            return;
+        }
+        // Ensure next_char_due is not in distant future after long idle
+        if self.next_char_due > now + interval * 10 {
+            self.next_char_due = now;
+        }
+        while now >= self.next_char_due {
+            let Some(ch) = self.baud_queue.pop_front() else {
+                self.next_char_due = now;
+                break;
+            };
+            self.grid.put_char(ch);
+            self.sound_engine
+                .play_char(ch, self.control_state.sound_palette);
+            // Advance by interval; continue if still due (allows burst of multiple chars when interval < frame time)
+            self.next_char_due += interval;
+            if self.baud_queue.is_empty() {
+                self.next_char_due = now + interval;
+                break;
+            }
+            if self.next_char_due > now {
+                break;
+            }
+        }
     }
 
     pub(crate) fn seed_banner(&mut self, _font_path: &Path, _pt: u16) {
@@ -722,29 +833,16 @@ impl AppState {
     }
 
     pub(crate) fn poll_backend(&mut self) {
-        let Some(backend) = self.backend.as_mut() else {
-            return;
-        };
+        let mut chunks: Vec<String> = Vec::new();
         let mut disconnected = false;
-        loop {
-            match backend.try_recv() {
-                Ok(chunk) => {
-                    if let Some(filtered) = Self::sanitize_chunk(&chunk) {
-                        if filtered.contains("[Game ended") {
-                            continue;
-                        }
-                        self.grid.put_str(&filtered);
-                    }
-                }
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => {
-                    disconnected = true;
-                    break;
-                }
-            }
-        }
-        if disconnected || backend.is_finished() {
-            let mut drain_disconnected = false;
+        #[allow(unused_assignments)]
+        let mut is_finished = false;
+        #[allow(unused_assignments)]
+        let mut is_basic = false;
+        {
+            let Some(backend) = self.backend.as_mut() else {
+                return;
+            };
             loop {
                 match backend.try_recv() {
                     Ok(chunk) => {
@@ -752,35 +850,65 @@ impl AppState {
                             if filtered.contains("[Game ended") {
                                 continue;
                             }
-                            self.grid.put_str(&filtered);
+                            chunks.push(filtered);
                         }
                     }
                     Err(TryRecvError::Empty) => break,
                     Err(TryRecvError::Disconnected) => {
-                        drain_disconnected = true;
+                        disconnected = true;
                         break;
                     }
                 }
             }
-            disconnected |= drain_disconnected;
-            let is_done = backend.is_finished();
-            if disconnected || (is_done && backend.is_basic()) {
-                self.return_to_menu("Game ended — Returned to menu");
+            is_finished = backend.is_finished();
+            is_basic = backend.is_basic();
+            if disconnected || is_finished {
+                let mut drain_disconnected = false;
+                loop {
+                    match backend.try_recv() {
+                        Ok(chunk) => {
+                            if let Some(filtered) = Self::sanitize_chunk(&chunk) {
+                                if filtered.contains("[Game ended") {
+                                    continue;
+                                }
+                                chunks.push(filtered);
+                            }
+                        }
+                        Err(TryRecvError::Empty) => break,
+                        Err(TryRecvError::Disconnected) => {
+                            drain_disconnected = true;
+                            break;
+                        }
+                    }
+                }
+                disconnected |= drain_disconnected;
             }
+        }
+        for filtered in chunks {
+            self.enqueue_output(&filtered);
+        }
+        if disconnected || (is_finished && is_basic) {
+            self.return_to_menu("Game ended — Returned to menu");
+            return;
+        }
+        if self.control_state.baud_rate == BaudRate::Infinity {
+            self.drain_baud_queue();
         }
     }
 
     pub(crate) fn check_session_exit(&mut self) -> bool {
-        if let Some(backend) = self.backend.as_ref() {
+        let maybe_filtered: Option<String>;
+        let should_check: bool;
+        let is_disconnected: bool;
+        {
+            let Some(backend) = self.backend.as_ref() else {
+                return false;
+            };
             match backend.try_recv() {
                 Ok(c) => {
-                    if let Some(filtered) = Self::sanitize_chunk(&c) {
-                        if filtered.contains("[Game ended") {
-                            return false;
-                        }
-                        self.grid.put_str(&filtered);
-                    }
-                    return false;
+                    maybe_filtered = Self::sanitize_chunk(&c).filter(|f| !f.contains("[Game ended"));
+                    is_disconnected = false;
+                    should_check = false;
                 }
                 Err(TryRecvError::Empty) => {
                     if backend.is_finished() && backend.is_basic() {
@@ -788,8 +916,14 @@ impl AppState {
                     }
                     return false;
                 }
-                Err(TryRecvError::Disconnected) => return true,
+                Err(TryRecvError::Disconnected) => {
+                    return true;
+                }
             }
+            let _ = (should_check, is_disconnected);
+        }
+        if let Some(filtered) = maybe_filtered {
+            self.enqueue_output(&filtered);
         }
         false
     }

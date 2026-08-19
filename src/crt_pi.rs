@@ -312,9 +312,11 @@ mod tests {
 
     #[test]
     fn distort_corner_maybe_out_of_bounds_with_high_curvature() {
-        let mut p = CrtPiParams::default();
-        p.curvature_x = 1.0;
-        p.curvature_y = 1.0;
+        let p = CrtPiParams {
+            curvature_x: 1.0,
+            curvature_y: 1.0,
+            ..Default::default()
+        };
         // corner may go out of bounds, but should not panic
         let _ = distort((0.0, 0.0), (1.0, 1.0), &p);
     }

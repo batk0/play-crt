@@ -14,6 +14,20 @@ pub fn init_sdl() -> Result<(sdl2::Sdl, sdl2::VideoSubsystem, sdl2::ttf::Sdl2Ttf
     Ok((sdl, video, ttf))
 }
 
+/// Initialize SDL audio subsystem. Returns `None` on failure (graceful fallback).
+#[must_use]
+pub fn init_audio(sdl: &sdl2::Sdl) -> Option<sdl2::AudioSubsystem> {
+    match sdl.audio() {
+        Ok(a) => Some(a),
+        Err(e) => {
+            if std::env::var("DEBUG").is_ok() {
+                eprintln!("audio init failed: {e} (running silent)");
+            }
+            None
+        }
+    }
+}
+
 pub fn create_window(
     video: &sdl2::VideoSubsystem,
 ) -> Result<sdl2::render::Canvas<sdl2::video::Window>, String> {

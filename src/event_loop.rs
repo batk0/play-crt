@@ -34,6 +34,8 @@ pub fn run_event_loop(
         }
 
         poll_session(state);
+        // Drain baud queue each tick (game-only, uninterruptible)
+        state.drain_baud_queue();
         // Keep window title in sync with active game / menu
         sync_window_title(canvas, state);
 
@@ -77,7 +79,11 @@ pub(crate) fn pump_events(
                     // If menu disappeared (launched), continue to game handling
                 }
                 Event::MouseButtonDown { x, y, mouse_btn: sdl2::mouse::MouseButton::Left, .. } => {
+                    let hit = controls::hit_test(x, y);
                     if controls::handle_click(&mut state.control_state, x, y) {
+                        if hit == Some(controls::ControlHit::Baud) {
+                            state.next_char_due = Instant::now();
+                        }
                         let _ = config::save_control_state(&state.control_state);
                     }
                 }
@@ -114,7 +120,11 @@ pub(crate) fn pump_events(
             } => state.history_next(),
             Event::TextInput { text, .. } => state.handle_text_input(&text),
             Event::MouseButtonDown { x, y, mouse_btn: sdl2::mouse::MouseButton::Left, .. } => {
+                let hit = controls::hit_test(x, y);
                 if controls::handle_click(&mut state.control_state, x, y) {
+                    if hit == Some(controls::ControlHit::Baud) {
+                        state.next_char_due = Instant::now();
+                    }
                     let _ = config::save_control_state(&state.control_state);
                 }
             }
